@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'dart:io'; // Untuk menangani file gambar
+import 'package:image_picker/image_picker.dart'; // Untuk membuka galeri HP
 import 'landingpage.dart';
 
 class AkunPage extends StatefulWidget {
@@ -16,6 +18,7 @@ class _AkunPageState extends State<AkunPage> {
   String emailUser = "Memuat...";
   String noHp = "Memuat...";
   String alamat = "Memuat...";
+  String? fotoProfil; // Variabel penyimpan foto profil
   bool isLoading = true;
 
   @override
@@ -35,6 +38,7 @@ class _AkunPageState extends State<AkunPage> {
           emailUser = data['email'] ?? widget.emailTarget;
           noHp = data['phone'] ?? "Belum diatur";
           alamat = data['alamat'] ?? "Belum diatur";
+          fotoProfil = data['foto_profil']; // Mengambil foto profil dari database
           isLoading = false;
         });
       } else {
@@ -48,7 +52,7 @@ class _AkunPageState extends State<AkunPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA), // Background abu-abu super lembut
+      backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -68,7 +72,7 @@ class _AkunPageState extends State<AkunPage> {
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
             child: Column(
               children: [
-                // KARTU PROFIL UTAMA (GRADIENT BIRU)
+                // KARTU PROFIL UTAMA
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
@@ -97,7 +101,17 @@ class _AkunPageState extends State<AkunPage> {
                         child: CircleAvatar(
                           radius: 30,
                           backgroundColor: Colors.grey.shade200,
-                          child: Icon(Icons.person, size: 40, color: Colors.blue.shade700),
+                          child: fotoProfil != null && fotoProfil!.isNotEmpty
+                              ? ClipOval(
+                                  child: Image.network(
+                                    "http://10.0.2.2:8000$fotoProfil",
+                                    width: 60,
+                                    height: 60,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) => Icon(Icons.person, size: 40, color: Colors.blue.shade700),
+                                  ),
+                                )
+                              : Icon(Icons.person, size: 40, color: Colors.blue.shade700),
                         ),
                       ),
                       const SizedBox(width: 15),
@@ -133,14 +147,14 @@ class _AkunPageState extends State<AkunPage> {
                 ),
                 const SizedBox(height: 30),
 
-                // DAFTAR MENU DENGAN BAYANGAN (SHADOW)
+                // DAFTAR MENU
                 _menuTile(
                   context,
                   icon: Icons.person_outline,
                   color: Colors.blue,
                   title: "Profile Saya",
                   subtitle: "Lihat detail informasi akun",
-                  page: ProfilePage(nama: namaLengkap, email: emailUser, hp: noHp, alamat: alamat),
+                  page: ProfilePage(nama: namaLengkap, email: emailUser, hp: noHp, alamat: alamat, fotoProfil: fotoProfil),
                 ),
                 _menuTile(
                   context,
@@ -163,13 +177,13 @@ class _AkunPageState extends State<AkunPage> {
                   icon: Icons.edit_outlined,
                   color: Colors.green,
                   title: "Edit Profil",
-                  subtitle: "Perbarui nama dan nomor telepon",
-                  page: EditProfilPage(email: emailUser, namaLengkap: namaLengkap, noHp: noHp),
+                  subtitle: "Perbarui foto, nama, dan telepon",
+                  page: EditProfilPage(email: emailUser, namaLengkap: namaLengkap, noHp: noHp, fotoProfil: fotoProfil),
                 ),
 
                 const SizedBox(height: 20),
 
-                // TOMBOL LOGOUT MODERN
+                // TOMBOL LOGOUT
                 SizedBox(
                   width: double.infinity,
                   height: 55,
@@ -223,21 +237,22 @@ class _AkunPageState extends State<AkunPage> {
         subtitle: Text(subtitle, style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
         trailing: const Icon(Icons.arrow_forward_ios, size: 14, color: Colors.grey),
         onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => page)).then((_) {
-          fetchProfileData(); // Refresh data jika kembali dari halaman edit
+          fetchProfileData(); // Auto-refresh data profil saat kembali dari halaman edit!
         }),
       ),
     );
   }
 }
 
-// ================= PROFILE SAYA (DESAIN HEADER MELENGKUNG) =================
+// ================= PROFILE SAYA =================
 class ProfilePage extends StatelessWidget {
   final String nama;
   final String email;
   final String hp;
   final String alamat;
+  final String? fotoProfil;
 
-  const ProfilePage({super.key, required this.nama, required this.email, required this.hp, required this.alamat});
+  const ProfilePage({super.key, required this.nama, required this.email, required this.hp, required this.alamat, this.fotoProfil});
 
   @override
   Widget build(BuildContext context) {
@@ -252,7 +267,6 @@ class ProfilePage extends StatelessWidget {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // HEADER BACKGROUND MELENGKUNG
             Stack(
               clipBehavior: Clip.none,
               alignment: Alignment.center,
@@ -261,7 +275,7 @@ class ProfilePage extends StatelessWidget {
                   width: double.infinity,
                   height: 120,
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(colors: [Colors.blue.shade700, Colors.blue.shade500]),
+                    gradient: LinearGradient(colors: [Colors.blue.shade700, Colors.blue.shade50]),
                     borderRadius: const BorderRadius.only(
                       bottomLeft: Radius.circular(30),
                       bottomRight: Radius.circular(30),
@@ -278,10 +292,20 @@ class ProfilePage extends StatelessWidget {
                         BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, 5)),
                       ],
                     ),
-                    child: const CircleAvatar(
+                    child: CircleAvatar(
                       radius: 50,
                       backgroundColor: Colors.white,
-                      child: Icon(Icons.person, size: 60, color: Colors.blue),
+                      child: fotoProfil != null && fotoProfil!.isNotEmpty
+                          ? ClipOval(
+                              child: Image.network(
+                                "http://10.0.2.2:8000$fotoProfil",
+                                width: 100,
+                                height: 100,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) => const Icon(Icons.person, size: 60, color: Colors.blue),
+                              ),
+                            )
+                          : const Icon(Icons.person, size: 60, color: Colors.blue),
                     ),
                   ),
                 ),
@@ -299,7 +323,6 @@ class ProfilePage extends StatelessWidget {
 
             const SizedBox(height: 30),
 
-            // KARTU INFORMASI
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Container(
@@ -356,12 +379,14 @@ class ProfilePage extends StatelessWidget {
   }
 }
 
-// ================= EDIT PROFIL =================
+// ================= EDIT PROFIL (DENGAN UPLOAD FOTO) =================
 class EditProfilPage extends StatefulWidget {
   final String email;
   final String namaLengkap;
   final String noHp;
-  const EditProfilPage({super.key, required this.email, required this.namaLengkap, required this.noHp});
+  final String? fotoProfil;
+
+  const EditProfilPage({super.key, required this.email, required this.namaLengkap, required this.noHp, this.fotoProfil});
 
   @override
   State<EditProfilPage> createState() => _EditProfilPageState();
@@ -371,6 +396,9 @@ class _EditProfilPageState extends State<EditProfilPage> {
   late TextEditingController namaController;
   late TextEditingController hpController;
   bool isLoading = false;
+  
+  File? _imageFile; // Menyimpan foto yang dipilih dari galeri
+  final ImagePicker _picker = ImagePicker();
 
   @override
   void initState() {
@@ -379,18 +407,42 @@ class _EditProfilPageState extends State<EditProfilPage> {
     hpController = TextEditingController(text: widget.noHp == "Belum diatur" ? "" : widget.noHp);
   }
 
+  Future<void> _pilihFoto() async {
+    final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
+    if (pickedFile != null) {
+      setState(() {
+        _imageFile = File(pickedFile.path);
+      });
+    }
+  }
+
   Future<void> simpanProfile() async {
     setState(() => isLoading = true);
     try {
-      final response = await http.post(
-        Uri.parse('http://10.0.2.2:8000/api/profile/update'),
-        headers: {"Content-Type": "application/json", "Accept": "application/json"},
-        body: jsonEncode({"email": widget.email, "full_name": namaController.text, "phone": hpController.text}),
-      );
+      var request = http.MultipartRequest('POST', Uri.parse('http://10.0.2.2:8000/api/profile/update'));
+      
+      // Data Teks - Menggunakan parameter widget.email yang dikirim dari AkunPage secara sah
+      request.fields['email'] = widget.email;
+      request.fields['full_name'] = namaController.text;
+      request.fields['phone'] = hpController.text;
+
+      // Data Gambar (Jika user memilih gambar baru)
+      if (_imageFile != null) {
+        request.files.add(await http.MultipartFile.fromPath('foto_profil', _imageFile!.path));
+      }
+
+      var streamedResponse = await request.send();
+      var response = await http.Response.fromStream(streamedResponse);
+
       if (response.statusCode == 200) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Profil Berhasil Diperbarui!"), backgroundColor: Colors.green));
         Navigator.pop(context);
+      } else {
+        if (!mounted) return;
+        // Membaca detail teks error jika disediakan oleh modifikasi Laravel catch kita kemarin
+        final errData = jsonDecode(response.body);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Gagal: ${errData['detail'] ?? response.statusCode}")));
       }
     } catch (e) {
       if (!mounted) return;
@@ -414,8 +466,35 @@ class _EditProfilPageState extends State<EditProfilPage> {
         padding: const EdgeInsets.all(25),
         child: Column(
           children: [
-            const CircleAvatar(radius: 45, backgroundColor: Color(0xFFF0F0F0), child: Icon(Icons.edit, size: 40, color: Colors.blue)),
+            GestureDetector(
+              onTap: _pilihFoto,
+              child: Stack(
+                children: [
+                  CircleAvatar(
+                    radius: 50,
+                    backgroundColor: const Color(0xFFF0F0F0),
+                    child: _imageFile != null
+                        ? ClipOval(child: Image.file(_imageFile!, width: 100, height: 100, fit: BoxFit.cover))
+                        : widget.fotoProfil != null && widget.fotoProfil!.isNotEmpty
+                            ? ClipOval(child: Image.network("http://10.0.2.2:8000${widget.fotoProfil}", width: 100, height: 100, fit: BoxFit.cover))
+                            : const Icon(Icons.person, size: 50, color: Colors.blue),
+                  ),
+                  Positioned(
+                    bottom: 0,
+                    right: 0,
+                    child: Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(color: Colors.blue.shade700, shape: BoxShape.circle, border: Border.all(color: Colors.white, width: 2)),
+                      child: const Icon(Icons.camera_alt, color: Colors.white, size: 20),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 10),
+            const Text("Ketuk untuk mengubah foto", style: TextStyle(color: Colors.grey, fontSize: 12)),
             const SizedBox(height: 30),
+
             _field("Nama Lengkap", Icons.person_outline, namaController),
             _fieldDisabled("Email (Tidak bisa diubah)", Icons.email_outlined, widget.email),
             _field("Nomor Telepon", Icons.phone_outlined, hpController),
@@ -647,7 +726,6 @@ class _RiwayatPageState extends State<RiwayatPage> {
               itemBuilder: (context, index) {
                 final item = riwayat[index];
                 
-                // Menentukan warna badge status
                 Color statusColor = Colors.grey;
                 if (item['status'] == 'Menunggu') statusColor = Colors.orange;
                 if (item['status'] == 'Diproses') statusColor = Colors.blue;

@@ -41,7 +41,7 @@ class _LoginPageState extends State<LoginPage> {
         Uri.parse(apiUrl),
         headers: {
             "Content-Type": "application/json",
-            "Accept": "application/json" // <-- TAMBAHKAN BARIS INI
+            "Accept": "application/json" 
         },
         body: jsonEncode({
           // Laravel meminta 'username', bukan 'email'
@@ -56,17 +56,28 @@ class _LoginPageState extends State<LoginPage> {
       if (response.statusCode == 200 && data['status'] == 'success') {
         if (!mounted) return;
         
-        // Ambil nama lengkap dari response
+        // 1. Ambil nama lengkap dari response
         String namaLengkap = data['data']['full_name'];
+        
+        // 2. Ambil path foto profil dari response (Bisa null jika belum upload)
+        // Catatan: Sesuaikan 'foto_profil' dengan nama variabel/kolom yang dikirim oleh API Login Laravel-mu
+        String? fotoProfil = data['data']['foto_profil']; 
 
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("Login Berhasil!")),
         );
         
-        // Arahkan ke Dashboard dengan membawa nama
+        String emailLogin = emailController.text.trim();
+        // 3. Arahkan ke Dashboard dengan membawa nama DAN FOTO
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => DashboardPage(namaUser: namaLengkap)),
+          MaterialPageRoute(
+            builder: (context) => DashboardPage(
+              namaUser: namaLengkap,
+              emailUser: emailController.text.trim(), // <--- KIRIM EMAIL AKTIF SEKARANG KE DASHBOARD
+              fotoProfile: fotoProfil, 
+            ),
+          ),
         );
       } else {
         // Jika gagal

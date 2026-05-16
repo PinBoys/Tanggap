@@ -4,14 +4,15 @@ import 'package:http/http.dart' as http;
 import 'dart:io';
 
 class BuatPengaduanPage extends StatefulWidget {
-  const BuatPengaduanPage({super.key});
+  // Tambahkan email agar Laravel tahu ini pengaduan milik siapa
+  final String emailTarget; 
+  const BuatPengaduanPage({super.key, this.emailTarget = "govin@gmail.com"});
 
   @override
   State<BuatPengaduanPage> createState() => _BuatPengaduanPageState();
 }
 
 class _BuatPengaduanPageState extends State<BuatPengaduanPage> {
-  // Controller untuk menangkap teks inputan user
   final TextEditingController _judulCtrl = TextEditingController();
   final TextEditingController _lokasiCtrl = TextEditingController();
   final TextEditingController _deskripsiCtrl = TextEditingController();
@@ -22,15 +23,12 @@ class _BuatPengaduanPageState extends State<BuatPengaduanPage> {
   String? alternatif;
   String? cakupan;
 
-  // Variabel untuk menyimpan gambar & status loading
   final ImagePicker _picker = ImagePicker();
   List<XFile> _imageFiles = [];
   bool isLoading = false;
 
-  // GANTI IP INI SESUAIKAN DENGAN EMULATOR (10.0.2.2) ATAU HP FISIK/WIFI
   final String apiUrl = "http://10.0.2.2:8000/api/pengaduan";
 
-  // FUNGSI UNTUK MENGAMBIL FOTO DARI GALERI
   Future<void> _pickImages() async {
     if (_imageFiles.length >= 5) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -43,7 +41,6 @@ class _BuatPengaduanPageState extends State<BuatPengaduanPage> {
     if (selectedImages.isNotEmpty) {
       setState(() {
         _imageFiles.addAll(selectedImages);
-        // Batasi maksimal 5 foto jika user memilih terlalu banyak sekaligus
         if (_imageFiles.length > 5) {
           _imageFiles = _imageFiles.sublist(0, 5);
         }
@@ -51,14 +48,12 @@ class _BuatPengaduanPageState extends State<BuatPengaduanPage> {
     }
   }
 
-  // FUNGSI MENGHAPUS FOTO YANG SUDAH DIPILIH
   void _removeImage(int index) {
     setState(() {
       _imageFiles.removeAt(index);
     });
   }
 
-  // FUNGSI MENGIRIM DATA KE LARAVEL
   Future<void> _submitPengaduan() async {
     if (_judulCtrl.text.isEmpty || _lokasiCtrl.text.isEmpty || _deskripsiCtrl.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -74,32 +69,39 @@ class _BuatPengaduanPageState extends State<BuatPengaduanPage> {
     try {
       var request = http.MultipartRequest('POST', Uri.parse(apiUrl));
       
-      // Mengisi Data Teks
+      // MENGIRIM SEMUA DATA YANG DIBUTUHKAN DATABASE
+      request.fields['email'] = widget.emailTarget; // Email Pengirim
       request.fields['judul'] = _judulCtrl.text;
       request.fields['titik_lokasi'] = _lokasiCtrl.text;
       request.fields['deskripsi'] = _deskripsiCtrl.text;
-      request.fields['level_prioritas'] = urgensi ?? 'Sedang'; 
+      
+      // Kirim data dropdown (Berikan default value jika user lupa milih)
+      request.fields['dampak'] = dampak ?? 'Aman'; 
+      request.fields['sensitivitas'] = sensitivitas ?? 'Stabil'; 
+      request.fields['alternatif'] = alternatif ?? 'Banyak Pilihan'; 
+      request.fields['cakupan'] = cakupan ?? 'Pribadi'; 
 
-      // Mengisi Data Foto Bukti (Bisa dikirim banyak / array)
+      // Mengisi Data Foto Bukti 
       for (var file in _imageFiles) {
         request.files.add(await http.MultipartFile.fromPath('bukti[]', file.path));
       }
 
       var response = await request.send();
+      var responseData = await response.stream.bytesToString();
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("Pengaduan berhasil dikirim!"), backgroundColor: Colors.green),
         );
-        Navigator.pop(context); // Kembali ke dashboard
+        Navigator.pop(context); 
       } else {
-        throw Exception("Gagal mengirim ke server. Status: ${response.statusCode}");
+        throw Exception(responseData);
       }
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Terjadi kesalahan: $e"), backgroundColor: Colors.red),
+        SnackBar(content: Text("Gagal: $e"), backgroundColor: Colors.red),
       );
     } finally {
       if (mounted) {
@@ -160,14 +162,14 @@ class _BuatPengaduanPageState extends State<BuatPengaduanPage> {
                 border: Border.all(color: Colors.grey.shade300),
               ),
               child: TextField(
-                controller: _deskripsiCtrl, // Tambah controller agar teks bisa ditangkap
+                controller: _deskripsiCtrl, 
                 maxLines: 5,
                 decoration: const InputDecoration(
                   hintText: "Tuliskan keluhan Anda secara detail...",
                   border: InputBorder.none,
                 ),
                 onChanged: (text) {
-                  setState(() {}); // Agar counter tulisan bisa update
+                  setState(() {}); 
                 },
               ),
             ),
@@ -176,14 +178,14 @@ class _BuatPengaduanPageState extends State<BuatPengaduanPage> {
               child: Padding(
                 padding: const EdgeInsets.only(top: 5),
                 child: Text(
-                  "${_deskripsiCtrl.text.length}/1000", // Logika counter tulisan
+                  "${_deskripsiCtrl.text.length}/1000", 
                   style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
                 ),
               ),
             ),
             const SizedBox(height: 18),
 
-            // DROPDOWN URGENSI
+            // DROPDOWN URGENSI (Opsional di database)
             const Text("Tingkat Urgensi", style: TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             _buildDropdown(
@@ -248,12 +250,10 @@ class _BuatPengaduanPageState extends State<BuatPengaduanPage> {
             ),
             const SizedBox(height: 12),
 
-            // ROW FOTO BUKTI (Bisa di-scroll ke samping jika kepanjangan)
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(
                 children: [
-                  // TOMBOL TAMBAH FOTO
                   GestureDetector(
                     onTap: _pickImages,
                     child: Container(
@@ -279,7 +279,6 @@ class _BuatPengaduanPageState extends State<BuatPengaduanPage> {
                   ),
                   const SizedBox(width: 10),
 
-                  // LIST FOTO YANG DIPILIH
                   ..._imageFiles.asMap().entries.map((entry) {
                     int index = entry.key;
                     XFile image = entry.value;
@@ -293,7 +292,7 @@ class _BuatPengaduanPageState extends State<BuatPengaduanPage> {
             ),
             const SizedBox(height: 30),
 
-            // BUTTON KIRIM PENGADUAN
+            // BUTTON KIRIM
             SizedBox(
               width: double.infinity,
               height: 50,
@@ -302,7 +301,7 @@ class _BuatPengaduanPageState extends State<BuatPengaduanPage> {
                   backgroundColor: Colors.blue,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
-                onPressed: isLoading ? null : _submitPengaduan, // Disable button kalau lagi loading
+                onPressed: isLoading ? null : _submitPengaduan, 
                 child: isLoading
                     ? const SizedBox(
                         height: 20,
@@ -321,10 +320,9 @@ class _BuatPengaduanPageState extends State<BuatPengaduanPage> {
     );
   }
 
-  // WIDGET TEXT FIELD
   Widget _buildTextField({required String hint, required TextEditingController controller}) {
     return TextField(
-      controller: controller, // Ini penting agar input tersimpan
+      controller: controller, 
       decoration: InputDecoration(
         hintText: hint,
         filled: true,
@@ -339,7 +337,6 @@ class _BuatPengaduanPageState extends State<BuatPengaduanPage> {
     );
   }
 
-  // WIDGET DROPDOWN
   Widget _buildDropdown({
     required String? value,
     required String hint,
@@ -367,7 +364,6 @@ class _BuatPengaduanPageState extends State<BuatPengaduanPage> {
     );
   }
 
-  // WIDGET PREVIEW GAMBAR
   Widget _buildImagePreview(XFile image, int index) {
     return Stack(
       children: [
@@ -377,7 +373,7 @@ class _BuatPengaduanPageState extends State<BuatPengaduanPage> {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(10),
             image: DecorationImage(
-              image: FileImage(File(image.path)), // Menampilkan gambar asli dari HP
+              image: FileImage(File(image.path)), 
               fit: BoxFit.cover,
             ),
           ),
@@ -386,7 +382,7 @@ class _BuatPengaduanPageState extends State<BuatPengaduanPage> {
           right: 0,
           top: 0,
           child: GestureDetector(
-            onTap: () => _removeImage(index), // Memanggil fungsi hapus
+            onTap: () => _removeImage(index), 
             child: Container(
               decoration: const BoxDecoration(
                 color: Colors.white,

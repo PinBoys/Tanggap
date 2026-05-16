@@ -25,6 +25,8 @@ Route::post('/pengaduan', [PengaduanController::class, 'store']);
 // Route untuk halaman Cek Status Pengaduan (Semua riwayat)
 Route::get('/pengaduan/status', [App\Http\Controllers\Api\PengaduanController::class, 'status']);
 
+Route::post('/profile/update', [App\Http\Controllers\Api\ProfileController::class, 'updateProfile']);
+
 // Route untuk mengambil data profil berdasarkan email
 Route::get('/profile/{email}', [App\Http\Controllers\Api\AuthController::class, 'getProfile']);
 
@@ -32,3 +34,10 @@ Route::get('/profile/{email}', [App\Http\Controllers\Api\AuthController::class, 
 Route::post('/profile/update', [App\Http\Controllers\Api\AuthController::class, 'updateProfile']);
 Route::post('/profile/change-password', [App\Http\Controllers\Api\AuthController::class, 'changePassword']);
 Route::get('/pengaduan/riwayat/{email}', [App\Http\Controllers\Api\PengaduanController::class, 'riwayatUser']);
+
+// Route untuk membuat pengaduan baru
+Route::post('/pengaduan', [App\Http\Controllers\Api\PengaduanController::class, 'store']);
+
+// Route untuk mengambil detail 1 pengaduan berdasarkan ID
+Route::get('/pengaduan/detail/{id}', [App\Http\Controllers\Api\PengaduanController::class, 'detail']);
+

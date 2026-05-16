@@ -9,8 +9,15 @@ import 'notifikasi.dart';
 
 class DashboardPage extends StatefulWidget {
   final String namaUser; 
+  final String emailUser; // <--- SEKARANG WAJIB MEMBAWA EMAIL USER YANG LOGIN
+  final String? fotoProfile; // Parameter foto profile (Bisa null jika belum upload)
 
-  const DashboardPage({super.key, required this.namaUser}); 
+  const DashboardPage({
+    super.key, 
+    required this.namaUser, 
+    required this.emailUser, // Masukkan ke constructor wajib
+    this.fotoProfile, 
+  }); 
 
   @override
   State<DashboardPage> createState() => _DashboardPageState();
@@ -20,7 +27,6 @@ class _DashboardPageState extends State<DashboardPage> {
   bool isLoading = true;
   List<Map<String, dynamic>> pengaduanTerbaru = [];
 
-  // GANTI IP INI SESUAIKAN DENGAN EMULATOR ATAU HP FISIK
   final String apiUrl = "http://10.0.2.2:8000/api/pengaduan/terbaru";
 
   @override
@@ -39,9 +45,12 @@ class _DashboardPageState extends State<DashboardPage> {
             "judul": item['judul'] ?? "Tanpa Judul",
             "tanggal": item['tanggal_pengaduan'] ?? "-",
             "status": item['status'] ?? "Menunggu",
+            "foto": item['bukti_pengaduan'], 
           }).toList();
           isLoading = false;
         });
+      } else {
+        setState(() => isLoading = false);
       }
     } catch (e) {
       print("Error: $e");
@@ -69,7 +78,6 @@ class _DashboardPageState extends State<DashboardPage> {
     return Scaffold(
       backgroundColor: Colors.white,
 
-      // BOTTOM NAVIGATION
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
         selectedItemColor: Colors.black,
@@ -77,7 +85,13 @@ class _DashboardPageState extends State<DashboardPage> {
         currentIndex: 0,
         onTap: (index) {
           if (index == 4) {
-            Navigator.push(context, MaterialPageRoute(builder: (context) => const AkunPage()));
+            // JALUR AMAN: Oper emailTarget ke AkunPage menggunakan email milik akun login saat ini
+            Navigator.push(
+              context, 
+              MaterialPageRoute(
+                builder: (context) => AkunPage(emailTarget: widget.emailUser)
+              )
+            );
           }
           if (index == 1) {
             Navigator.push(context, MaterialPageRoute(builder: (context) => const PengaduanPage()));
@@ -138,14 +152,29 @@ class _DashboardPageState extends State<DashboardPage> {
                       ],
                     ),
 
-                    const CircleAvatar(
+                    // LOGIKA FOTO PROFILE PADA HEADER
+                    CircleAvatar(
                       radius: 18,
                       backgroundColor: Colors.transparent,
-                      child: Icon(
-                        Icons.account_circle,
-                        size: 35,
-                        color: Colors.black,
-                      ),
+                      child: widget.fotoProfile != null && widget.fotoProfile!.isNotEmpty
+                          ? ClipOval(
+                              child: Image.network(
+                                "http://10.0.2.2:8000${widget.fotoProfile}",
+                                width: 36,
+                                height: 36,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) => const Icon(
+                                  Icons.account_circle,
+                                  size: 35,
+                                  color: Colors.black,
+                                ),
+                              ),
+                            )
+                          : const Icon(
+                              Icons.account_circle,
+                              size: 35,
+                              color: Colors.black,
+                            ),
                     ),
                   ],
                 ),
@@ -210,8 +239,7 @@ class _DashboardPageState extends State<DashboardPage> {
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
-                                      builder: (context) =>
-                                          const BuatPengaduanPage(),
+                                      builder: (context) => const BuatPengaduanPage(),
                                     ),
                                   );
                                 },
@@ -263,16 +291,22 @@ class _DashboardPageState extends State<DashboardPage> {
 
                 const SizedBox(height: 15),
 
-                // LIST DINAMIS
                 isLoading 
                     ? const Center(child: CircularProgressIndicator()) 
                     : Column(
                         children: pengaduanTerbaru.map((item) {
+                          // PROTEKSI ANTI-LAYAR MERAH: Konversi paksa data null menjadi teks default yang aman
+                          String title = item["judul"]?.toString() ?? "Tanpa Judul";
+                          String tanggal = item["tanggal"]?.toString() ?? "-";
+                          String status = item["status"]?.toString() ?? "Menunggu";
+                          String? foto = item["foto"]?.toString();
+
                           return buildPengaduan(
-                            item["judul"],
-                            item["tanggal"], // Tanggal dilempar ke fungsi build
-                            item["status"],
-                            getStatusColor(item["status"]),
+                            title,
+                            tanggal, 
+                            status,
+                            getStatusColor(status),
+                            foto, 
                           );
                         }).toList(),
                       ),
@@ -284,8 +318,7 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  // Widget tetap sama, hanya parameter ke-2 diubah jadi dinamis (tanggal)
-  Widget buildPengaduan(String title, String tanggal, String status, Color color) {
+  Widget buildPengaduan(String title, String tanggal, String status, Color color, String? fotoUrl) {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(10),
@@ -297,12 +330,25 @@ class _DashboardPageState extends State<DashboardPage> {
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(8),
-            child: Image.network(
-              "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS_dNOHeX67qYnC1tEIxltXB4c4Gy6QyyviCw&s",
-              width: 50,
-              height: 50,
-              fit: BoxFit.cover,
-            ),
+            child: fotoUrl != null && fotoUrl.isNotEmpty
+                ? Image.network(
+                    "http://10.0.2.2:8000$fotoUrl", 
+                    width: 50,
+                    height: 50,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => Container(
+                      width: 50,
+                      height: 50,
+                      color: Colors.grey.shade200,
+                      child: const Icon(Icons.broken_image, color: Colors.grey),
+                    ),
+                  )
+                : Container(
+                    width: 50,
+                    height: 50,
+                    color: Colors.grey.shade200,
+                    child: const Icon(Icons.image_not_supported, color: Colors.grey),
+                  ),
           ),
 
           const SizedBox(width: 10),
@@ -314,10 +360,12 @@ class _DashboardPageState extends State<DashboardPage> {
                 Text(
                   title,
                   style: const TextStyle(fontWeight: FontWeight.w500),
+                  maxLines: 1, 
+                  overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 5),
                 Text(
-                  tanggal, // Sekarang mengambil tanggal dari database, bukan hardcode 20 Mei
+                  tanggal, 
                   style: const TextStyle(fontSize: 11, color: Colors.grey),
                 ),
               ],

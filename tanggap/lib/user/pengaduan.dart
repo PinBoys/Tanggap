@@ -21,7 +21,6 @@ class _PengaduanPageState extends State<PengaduanPage> {
     "Selesai",
   ];
 
-  // List ini sekarang kosong, akan diisi dari database
   List<Map<String, dynamic>> pengaduan = [];
 
   // GANTI IP INI SESUAIKAN DENGAN EMULATOR (10.0.2.2) ATAU HP FISIK/WIFI
@@ -33,7 +32,6 @@ class _PengaduanPageState extends State<PengaduanPage> {
     fetchDataPengaduan();
   }
 
-  // Fungsi ambil data dari database
   Future<void> fetchDataPengaduan() async {
     try {
       final response = await http.get(Uri.parse(apiUrl));
@@ -43,7 +41,8 @@ class _PengaduanPageState extends State<PengaduanPage> {
         
         setState(() {
           pengaduan = data.map((item) => {
-            "kode": "#PGD-${item['id_pengaduan']}", // PadLeft dihapus karena kita pakai potongan UUID huruf
+            "id_pengaduan": item['id_pengaduan'], // Simpan ID asli
+            "kode": "#PGD-${item['id_pengaduan']}", 
             "judul": item['judul'] ?? "Tanpa Judul",
             "tanggal": item['tanggal_pengaduan'] ?? "-",
             "lokasi": item['titik_lokasi'] ?? "Lokasi belum ditentukan",
@@ -52,14 +51,11 @@ class _PengaduanPageState extends State<PengaduanPage> {
           isLoading = false;
         });
       } else {
-        // INI TAMBAHANNYA: Agar kalau server error, loadingnya berhenti!
         setState(() {
           isLoading = false;
         });
-        print("Server merespon dengan kode: ${response.statusCode}");
       }
     } catch (e) {
-      print("Error: $e");
       setState(() {
         isLoading = false;
       });
@@ -68,7 +64,6 @@ class _PengaduanPageState extends State<PengaduanPage> {
 
   @override
   Widget build(BuildContext context) {
-    // Logika filter aslimu tetap dibiarkan utuh tanpa diubah
     List<Map<String, dynamic>> filtered = pengaduan.where((item) {
       if (selectedIndex == 0) {
         return true;
@@ -106,7 +101,6 @@ class _PengaduanPageState extends State<PengaduanPage> {
                 tabs.length,
                 (index) {
                   bool active = selectedIndex == index;
-
                   return GestureDetector(
                     onTap: () {
                       setState(() {
@@ -137,10 +131,9 @@ class _PengaduanPageState extends State<PengaduanPage> {
                 },
               ),
             ),
-
             const SizedBox(height: 18),
 
-            // LIST
+            // LIST PENGADUAN
             Expanded(
               child: ListView.builder(
                 itemCount: filtered.length,
@@ -148,14 +141,10 @@ class _PengaduanPageState extends State<PengaduanPage> {
                   final item = filtered[index];
 
                   return Container(
-                    margin: const EdgeInsets.only(
-                      bottom: 14,
-                    ),
+                    margin: const EdgeInsets.only(bottom: 14),
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      border: Border.all(
-                        color: Colors.grey.shade300,
-                      ),
+                      border: Border.all(color: Colors.grey.shade300),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Column(
@@ -166,19 +155,12 @@ class _PengaduanPageState extends State<PengaduanPage> {
                           children: [
                             Text(
                               item["kode"],
-                              style: const TextStyle(
-                                fontSize: 11,
-                                color: Colors.grey,
-                              ),
+                              style: const TextStyle(fontSize: 11, color: Colors.grey),
                             ),
                             Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 4,
-                              ),
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                               decoration: BoxDecoration(
-                                color: getStatusColor(item["status"])
-                                    .withOpacity(0.2),
+                                color: getStatusColor(item["status"]).withOpacity(0.2),
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               child: Text(
@@ -192,56 +174,39 @@ class _PengaduanPageState extends State<PengaduanPage> {
                             ),
                           ],
                         ),
-
                         const SizedBox(height: 8),
-
                         Text(
                           item["judul"],
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 15,
-                          ),
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
                         ),
-
                         const SizedBox(height: 5),
-
                         Text(
                           item["tanggal"],
-                          style: TextStyle(
-                            color: Colors.grey.shade600,
-                            fontSize: 11,
-                          ),
+                          style: TextStyle(color: Colors.grey.shade600, fontSize: 11),
                         ),
-
                         const SizedBox(height: 5),
-
                         Row(
                           children: [
-                            Icon(
-                              Icons.location_on,
-                              size: 14,
-                              color: Colors.grey.shade600,
-                            ),
+                            Icon(Icons.location_on, size: 14, color: Colors.grey.shade600),
                             const SizedBox(width: 4),
                             Text(
                               item["lokasi"],
-                              style: TextStyle(
-                                color: Colors.grey.shade600,
-                                fontSize: 11,
-                              ),
+                              style: TextStyle(color: Colors.grey.shade600, fontSize: 11),
                             ),
                           ],
                         ),
-
                         const SizedBox(height: 10),
 
+                        // NAVIGATOR DENGAN PELINDUNG NULL (ANTI CRASH)
                         GestureDetector(
                           onTap: () {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) =>
-                                    const DetailPengaduanPage(),
+                                builder: (context) => DetailPengaduanPage(
+                                  // toString() dan ?? "" mencegah lemparan data null
+                                  idPengaduan: item["id_pengaduan"]?.toString() ?? "", 
+                                ),
                               ),
                             );
                           },
@@ -249,10 +214,7 @@ class _PengaduanPageState extends State<PengaduanPage> {
                             alignment: Alignment.centerRight,
                             child: Text(
                               "Lihat detail",
-                              style: TextStyle(
-                                color: Colors.blue,
-                                fontSize: 11,
-                              ),
+                              style: TextStyle(color: Colors.blue, fontSize: 11),
                             ),
                           ),
                         ),
@@ -273,7 +235,7 @@ class _PengaduanPageState extends State<PengaduanPage> {
       case "Menunggu":
         return Colors.orange;
       case "Diproses":
-        return Colors.deepOrange;
+        return Colors.blue;
       case "Selesai":
         return Colors.green;
       default:
