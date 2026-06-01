@@ -1,23 +1,58 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+
 import 'daftar_pengaduan_admin.dart';
 
-class TindakLanjutAdminPage
-    extends StatefulWidget {
+class TindakLanjutAdminPage extends StatefulWidget {
+  final Map<String, dynamic> pengaduan;
 
   const TindakLanjutAdminPage({
     super.key,
+    required this.pengaduan,
   });
 
   @override
-  State<TindakLanjutAdminPage>
-      createState() =>
-          _TindakLanjutAdminPageState();
+  State<TindakLanjutAdminPage> createState() =>
+      _TindakLanjutAdminPageState();
 }
 
 class _TindakLanjutAdminPageState
     extends State<TindakLanjutAdminPage> {
 
-  String status = "Diproses";
+  late String status;
+
+  @override
+  void initState() {
+    super.initState();
+
+    status =
+        widget.pengaduan["status"] ??
+        "Menunggu";
+  }
+
+Future<bool> updateStatus() async {
+
+  final response = await http.put(
+
+    Uri.parse(
+      "http://127.0.0.1:8000/api/admin/pengaduan/${widget.pengaduan['id']}/status",
+    ),
+
+    headers: {
+      "Content-Type": "application/json",
+    },
+
+    body: jsonEncode({
+      "status": status,
+    }),
+  );
+
+  print("STATUS CODE: ${response.statusCode}");
+  print("BODY: ${response.body}");
+
+  return response.statusCode == 200;
+}
 
   @override
   Widget build(BuildContext context) {
@@ -58,14 +93,16 @@ class _TindakLanjutAdminPageState
 
             Row(
               mainAxisAlignment:
-                  MainAxisAlignment
-                      .spaceBetween,
+                  MainAxisAlignment.spaceBetween,
 
               children: [
 
-                const Text(
-                  "# PGD-2026-00012",
-                  style: TextStyle(
+                Text(
+                  widget.pengaduan["id"]
+                      .toString()
+                      .substring(0, 8),
+
+                  style: const TextStyle(
                     color: Colors.green,
                     fontWeight:
                         FontWeight.bold,
@@ -75,8 +112,7 @@ class _TindakLanjutAdminPageState
 
                 Container(
                   padding:
-                      const EdgeInsets
-                          .symmetric(
+                      const EdgeInsets.symmetric(
                     horizontal: 12,
                     vertical: 5,
                   ),
@@ -87,16 +123,18 @@ class _TindakLanjutAdminPageState
                         .orange.shade100,
 
                     borderRadius:
-                        BorderRadius
-                            .circular(
-                                10),
+                        BorderRadius.circular(
+                            10),
                   ),
 
                   child: Text(
-                    "Menunggu",
+                    widget.pengaduan["status"] ??
+                        "-",
+
                     style: TextStyle(
                       color: Colors
                           .orange.shade800,
+
                       fontWeight:
                           FontWeight.bold,
                     ),
@@ -119,33 +157,32 @@ class _TindakLanjutAdminPageState
             const SizedBox(
                 height: 10),
 
-            DropdownButtonFormField(
+            DropdownButtonFormField<String>(
               value: status,
 
               items: const [
 
                 DropdownMenuItem(
-                  value: "Diproses",
-                  child:
-                      Text("Diproses"),
+                  value: "PENDING",
+                  child: Text("Menunggu"),
                 ),
 
                 DropdownMenuItem(
-                  value: "Selesai",
-                  child:
-                      Text("Selesai"),
+                  value: "DIPROSES",
+                  child: Text("Diproses"),
                 ),
+
+                DropdownMenuItem(
+                  value: "SELESAI",
+                  child: Text("Selesai"),
+                ),
+
               ],
 
               onChanged: (value) {
-
                 setState(() {
-
-                  status =
-                      value.toString();
-
+                  status = value!;
                 });
-
               },
             ),
 
@@ -166,15 +203,16 @@ class _TindakLanjutAdminPageState
             TextField(
               maxLines: 5,
 
-              decoration: InputDecoration(
+              decoration:
+                  InputDecoration(
                 hintText:
                     "Tulis tindak lanjut",
 
                 border:
                     OutlineInputBorder(
                   borderRadius:
-                      BorderRadius
-                          .circular(10),
+                      BorderRadius.circular(
+                          10),
                 ),
               ),
             ),
@@ -216,9 +254,8 @@ class _TindakLanjutAdminPageState
                         .blue.shade50,
 
                     borderRadius:
-                        BorderRadius
-                            .circular(
-                                10),
+                        BorderRadius.circular(
+                            10),
                   ),
 
                   child: const Icon(
@@ -227,6 +264,7 @@ class _TindakLanjutAdminPageState
                     size: 40,
                   ),
                 ),
+
               ],
             ),
 
@@ -239,38 +277,58 @@ class _TindakLanjutAdminPageState
 
               child: ElevatedButton(
                 style:
-                    ElevatedButton
-                        .styleFrom(
+                    ElevatedButton.styleFrom(
                   backgroundColor:
                       Colors.green,
                 ),
 
-                onPressed: () {
+                onPressed: () async {
 
-                  Navigator.pushAndRemoveUntil(
-                    context,
+                  bool berhasil =
+                      await updateStatus();
 
-                    MaterialPageRoute(
-                      builder:
-                          (context) =>
-                              const DaftarPengaduanAdminPage(),
-                    ),
+                  if (berhasil) {
 
-                    (route) => false,
-                  );
+                    Navigator.pushAndRemoveUntil(
+                      context,
+
+                      MaterialPageRoute(
+                        builder:
+                            (context) =>
+                                const DaftarPengaduanAdminPage(),
+                      ),
+
+                      (route) => false,
+                    );
+
+                  } else {
+
+                    ScaffoldMessenger.of(
+                      context,
+                    ).showSnackBar(
+
+                      const SnackBar(
+                        content: Text(
+                          "Gagal update status",
+                        ),
+                      ),
+
+                    );
+
+                  }
 
                 },
 
                 child: const Text(
                   "Simpan",
                   style: TextStyle(
-                    color:
-                        Colors.white,
+                    color: Colors.white,
                     fontSize: 16,
                   ),
                 ),
               ),
             ),
+
           ],
         ),
       ),
@@ -278,6 +336,7 @@ class _TindakLanjutAdminPageState
   }
 
   Widget _image() {
+
     return ClipRRect(
       borderRadius:
           BorderRadius.circular(10),
@@ -289,5 +348,6 @@ class _TindakLanjutAdminPageState
         fit: BoxFit.cover,
       ),
     );
+
   }
 }

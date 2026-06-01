@@ -24,7 +24,33 @@ class _PengaduanPageState extends State<PengaduanPage> {
   List<Map<String, dynamic>> pengaduan = [];
 
   // GANTI IP INI SESUAIKAN DENGAN EMULATOR (10.0.2.2) ATAU HP FISIK/WIFI
-  final String apiUrl = "http://10.0.2.2:8000/api/pengaduan/status";
+  final String apiUrl = "http://127.0.0.1:8000/api/pengaduan/status";
+
+  Color getStatusColor(String status) {
+
+  status = status.trim().toLowerCase();
+
+  if (
+    status == "pending" ||
+    status == "menunggu"
+  ) {
+    return Colors.orange;
+  }
+
+  if (
+    status == "diproses"
+  ) {
+    return Colors.blue;
+  }
+
+  if (
+    status == "selesai"
+  ) {
+    return Colors.green;
+  }
+
+  return Colors.grey;
+}
 
   @override
   void initState() {
@@ -68,7 +94,10 @@ class _PengaduanPageState extends State<PengaduanPage> {
       if (selectedIndex == 0) {
         return true;
       }
-      return item["status"] == tabs[selectedIndex];
+      return statusIndonesia(
+       item["status"],
+     ) ==
+     tabs[selectedIndex];
     }).toList();
 
     return Scaffold(
@@ -163,8 +192,8 @@ class _PengaduanPageState extends State<PengaduanPage> {
                                 color: getStatusColor(item["status"]).withOpacity(0.2),
                                 borderRadius: BorderRadius.circular(6),
                               ),
-                              child: Text(
-                                item["status"],
+                              child: Text(statusIndonesia(
+                                item["status"],),
                                 style: TextStyle(
                                   color: getStatusColor(item["status"]),
                                   fontSize: 11,
@@ -230,16 +259,24 @@ class _PengaduanPageState extends State<PengaduanPage> {
     );
   }
 
-  Color getStatusColor(String status) {
+  String statusIndonesia(String status) {
+
+    status = status.trim().toUpperCase();
+
     switch (status) {
-      case "Menunggu":
-        return Colors.orange;
-      case "Diproses":
-        return Colors.blue;
-      case "Selesai":
-        return Colors.green;
+
+      case "PENDING":
+      case "MENUNGGU":
+        return "Menunggu";
+
+      case "DIPROSES":
+        return "Diproses";
+
+      case "SELESAI":
+        return "Selesai";
+
       default:
-        return Colors.grey;
+        return status;
     }
   }
 }

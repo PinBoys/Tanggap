@@ -33,8 +33,8 @@ class PengaduanController extends Controller
             $item->tanggal_pengaduan = date('d M Y', strtotime($item->tanggal_pengaduan));
 
             if ($item->status == 'PENDING') $item->status = 'Menunggu';
-            elseif ($item->status == 'PROCESSED') $item->status = 'Diproses';
-            elseif ($item->status == 'RESOLVED') $item->status = 'Selesai';
+            elseif ($item->status == 'DIPROSES') $item->status = 'Diproses';
+            elseif ($item->status == 'SELESAI') $item->status = 'Selesai';
 
             return $item;
         });
@@ -67,8 +67,8 @@ class PengaduanController extends Controller
             $item->tanggal_pengaduan = date('d M Y', strtotime($item->tanggal_pengaduan));
 
             if ($item->status == 'PENDING') $item->status = 'Menunggu';
-            elseif ($item->status == 'PROCESSED') $item->status = 'Diproses';
-            elseif ($item->status == 'RESOLVED') $item->status = 'Selesai';
+            elseif ($item->status == 'DIPROSES') $item->status = 'Diproses';
+            elseif ($item->status == 'SELESAI') $item->status = 'Selesai';
 
             return $item;
         });
@@ -105,8 +105,8 @@ class PengaduanController extends Controller
             $item->waktu = date('H:i', strtotime($item->waktu));
             
             if ($item->status == 'PENDING') $item->status = 'Menunggu';
-            elseif ($item->status == 'PROCESSED') $item->status = 'Diproses';
-            elseif ($item->status == 'RESOLVED') $item->status = 'Selesai';
+            elseif ($item->status == 'DIPROSES') $item->status = 'Diproses';
+            elseif ($item->status == 'SELESAI') $item->status = 'Selesai';
             
             return $item;
         });
@@ -198,7 +198,7 @@ class PengaduanController extends Controller
             ->select('file_url')
             ->get();
 
-        $statusMap = ['PENDING' => 'Menunggu', 'PROCESSED' => 'Diproses', 'RESOLVED' => 'Selesai'];
+        $statusMap = ['PENDING' => 'Menunggu', 'DIPROSES' => 'Diproses', 'SELESAI' => 'Selesai'];
         $statusIndo = $statusMap[$pengaduan->status] ?? $pengaduan->status;
 
         return response()->json([
@@ -209,9 +209,24 @@ class PengaduanController extends Controller
                 'tanggal' => date('d M Y, H:i \W\I\T\A', strtotime($pengaduan->created_at)),
                 'lokasi' => $pengaduan->address_note,
                 'deskripsi' => $pengaduan->description,
-                'status' => $statusIndo,
+                'status' => $pengaduan->status,
                 'foto' => $foto->pluck('file_url') 
             ]
         ], 200);
+    }
+
+    public function updateStatus(Request $request, $id)
+    {
+        DB::table('complaints')
+            ->where('id', $id)
+            ->update([
+                'status' => $request->status,
+                'updated_at' => now()
+            ]);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Status berhasil diperbarui'
+        ]);
     }
 }

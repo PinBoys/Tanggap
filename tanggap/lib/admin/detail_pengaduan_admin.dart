@@ -1,16 +1,61 @@
 import 'package:flutter/material.dart';
 import 'tindak_lanjut_admin.dart';
 
-class DetailPengaduanAdminPage
-    extends StatelessWidget {
+class DetailPengaduanAdminPage extends StatelessWidget {
+  final Map<String, dynamic> pengaduan;
 
-  const DetailPengaduanAdminPage({
-    super.key,
-  });
+  const DetailPengaduanAdminPage({super.key, required this.pengaduan});
+
+  String statusIndonesia(String status) {
+    switch (status) {
+      case "PENDING":
+        return "Menunggu";
+
+      case "DIPROSES":
+        return "Diproses";
+
+      case "SELESAI":
+        return "Selesai";
+
+      default:
+        return status;
+    }
+  }
+
+  Color statusColor(String status) {
+    if (status == "PENDING") {
+      return Colors.orange.shade100;
+    }
+
+    if (status == "DIPROSES") {
+      return Colors.blue.shade100;
+    }
+
+    if (status == "SELESAI") {
+      return Colors.green.shade100;
+    }
+
+    return Colors.grey.shade200;
+  }
+
+  Color statusTextColor(String status) {
+    if (status == "PENDING") {
+      return Colors.orange.shade800;
+    }
+
+    if (status == "DIPROSES") {
+      return Colors.blue.shade800;
+    }
+
+    if (status == "SELESAI") {
+      return Colors.green.shade800;
+    }
+
+    return Colors.black;
+  }
 
   @override
   Widget build(BuildContext context) {
-
     return Scaffold(
       backgroundColor: Colors.white,
 
@@ -18,197 +63,124 @@ class DetailPengaduanAdminPage
         backgroundColor: Colors.white,
         elevation: 0,
 
-        iconTheme:
-            const IconThemeData(
-          color: Colors.black,
-        ),
+        iconTheme: const IconThemeData(color: Colors.black),
 
         centerTitle: true,
 
         title: const Text(
           "Detail Pengaduan",
-          style: TextStyle(
-            color: Colors.black,
-            fontWeight:
-                FontWeight.bold,
-          ),
+          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
         ),
       ),
 
       body: SingleChildScrollView(
-        padding:
-            const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(20),
 
         child: Column(
-          crossAxisAlignment:
-              CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
 
           children: [
-
             Row(
-              mainAxisAlignment:
-                  MainAxisAlignment
-                      .spaceBetween,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
 
               children: [
-
-                const Text(
-                  "# PGD-2026-00012",
-                  style: TextStyle(
+                Text(
+                  pengaduan["id"].toString().substring(0, 8),
+                  style: const TextStyle(
                     color: Colors.green,
-                    fontWeight:
-                        FontWeight.bold,
+                    fontWeight: FontWeight.bold,
                     fontSize: 18,
                   ),
                 ),
 
                 Container(
-                  padding:
-                      const EdgeInsets
-                          .symmetric(
+                  padding: const EdgeInsets.symmetric(
                     horizontal: 12,
                     vertical: 5,
                   ),
 
-                  decoration:
-                      BoxDecoration(
-                    color: Colors
-                        .orange.shade100,
+                  decoration: BoxDecoration(
+                    color: statusColor(pengaduan["status"] ?? ""),
 
-                    borderRadius:
-                        BorderRadius
-                            .circular(
-                                10),
+                    borderRadius: BorderRadius.circular(10),
                   ),
 
                   child: Text(
-                    "Menunggu",
+                    statusIndonesia(pengaduan["status"] ?? ""),
                     style: TextStyle(
-                      color: Colors
-                          .orange.shade800,
-                      fontWeight:
-                          FontWeight.bold,
+                      color: statusTextColor(pengaduan["status"] ?? ""),
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
                 ),
               ],
             ),
 
-            const SizedBox(
-                height: 30),
+            const SizedBox(height: 30),
 
-            _item(
-              "Judul Pengaduan",
-              "Infrastruktur Jalan",
-            ),
+            _item("Judul Pengaduan", pengaduan["title"] ?? "-"),
 
-            _item(
-              "Lokasi Kejadian",
-              "Jl. Raya Desa Buleleng",
-            ),
+            _item("Lokasi Kejadian", pengaduan["address_note"] ?? "-"),
 
-            _item(
-              "Tanggal",
-              "20 Mei 2026, 12.25 WITA",
-            ),
+            _item("Tanggal", pengaduan["created_at"] ?? "-"),
 
-            _item(
-              "Keluhan/Deskripsi",
-              "Jalan di depan balai desa berlubang cukup dalam sehingga membahayakan pengguna jalan, terutama saat hujan.",
-            ),
+            _item("Keluhan/Deskripsi", pengaduan["description"] ?? "-"),
 
-            _item(
-              "Tingkat Urgensi",
-              "Sedang",
-            ),
+            _item("Tingkat Urgensi", "Sedang"),
 
-            _item(
-              "Dampak Keselamatan",
-              "Resiko Luka",
-            ),
+            _item("Dampak Keselamatan", "Resiko Luka"),
 
-            _item(
-              "Sensitivitas Waktu",
-              "Cepat",
-            ),
+            _item("Sensitivitas Waktu", "Cepat"),
 
-            _item(
-              "Ketersediaan Alternatif",
-              "Sulit",
-            ),
+            _item("Ketersediaan Alternatif", "Sulit"),
 
-            _item(
-              "Cakupan Populasi",
-              "Lingkungan",
-            ),
+            _item("Cakupan Populasi", "Lingkungan"),
 
-            const SizedBox(
-                height: 20),
+            const SizedBox(height: 20),
 
             const Text(
               "Foto Bukti",
-              style: TextStyle(
-                fontWeight:
-                    FontWeight.bold,
-                fontSize: 16,
-              ),
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
             ),
 
-            const SizedBox(
-                height: 15),
+            const SizedBox(height: 15),
 
             Row(
               children: [
+                _image(),
+
+                const SizedBox(width: 10),
 
                 _image(),
 
-                const SizedBox(
-                    width: 10),
-
-                _image(),
-
-                const SizedBox(
-                    width: 10),
+                const SizedBox(width: 10),
 
                 _image(),
               ],
             ),
 
-            const SizedBox(
-                height: 35),
+            const SizedBox(height: 35),
 
             SizedBox(
               width: double.infinity,
               height: 50,
 
               child: ElevatedButton(
-                style:
-                    ElevatedButton
-                        .styleFrom(
-                  backgroundColor:
-                      Colors.green,
-                ),
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
 
                 onPressed: () {
-
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder:
-                          (context) =>
-                              const TindakLanjutAdminPage(),
+                      builder: (context) =>
+                          TindakLanjutAdminPage(pengaduan: pengaduan),
                     ),
                   );
-
                 },
 
                 child: const Text(
                   "Tindak lanjuti",
-                  style: TextStyle(
-                    color:
-                        Colors.white,
-                    fontSize: 16,
-                  ),
+                  style: TextStyle(color: Colors.white, fontSize: 16),
                 ),
               ),
             ),
@@ -218,32 +190,22 @@ class DetailPengaduanAdminPage
     );
   }
 
-  Widget _item(
-    String title,
-    String value,
-  ) {
+  Widget _item(String title, String value) {
     return Padding(
-      padding:
-          const EdgeInsets.only(
-        bottom: 20,
-      ),
+      padding: const EdgeInsets.only(bottom: 20),
 
       child: Row(
-        crossAxisAlignment:
-            CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
 
         children: [
-
           SizedBox(
             width: 130,
 
             child: Text(
               title,
               style: TextStyle(
-                color:
-                    Colors.grey.shade700,
-                fontWeight:
-                    FontWeight.w500,
+                color: Colors.grey.shade700,
+                fontWeight: FontWeight.w500,
               ),
             ),
           ),
@@ -251,10 +213,7 @@ class DetailPengaduanAdminPage
           Expanded(
             child: Text(
               value,
-              style: const TextStyle(
-                fontWeight:
-                    FontWeight.w600,
-              ),
+              style: const TextStyle(fontWeight: FontWeight.w600),
             ),
           ),
         ],
@@ -264,8 +223,7 @@ class DetailPengaduanAdminPage
 
   Widget _image() {
     return ClipRRect(
-      borderRadius:
-          BorderRadius.circular(10),
+      borderRadius: BorderRadius.circular(10),
 
       child: Image.asset(
         "assets/images/jalanberlubang.jpeg",

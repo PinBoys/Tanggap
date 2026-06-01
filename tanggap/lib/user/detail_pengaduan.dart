@@ -23,7 +23,7 @@ class _DetailPengaduanPageState extends State<DetailPengaduanPage> {
 
   Future<void> fetchDetail() async {
     try {
-      final response = await http.get(Uri.parse("http://10.0.2.2:8000/api/pengaduan/detail/${widget.idPengaduan}"));
+      final response = await http.get(Uri.parse("http://127.0.0.1:8000/api/pengaduan/detail/${widget.idPengaduan}"));
       
       if (response.statusCode == 200) {
         final data = json.decode(response.body)['data'];
@@ -39,13 +39,44 @@ class _DetailPengaduanPageState extends State<DetailPengaduanPage> {
     }
   }
 
-  // Fungsi untuk mewarnai label status
   Color getStatusColor(String status) {
-    if (status == "Menunggu") return Colors.orange;
-    if (status == "Diproses") return Colors.blue;
-    if (status == "Selesai") return Colors.green;
-    return Colors.grey;
+
+  status = status.trim().toUpperCase();
+
+  if (status == "PENDING") {
+    return Colors.orange;
   }
+
+  if (status == "DIPROSES") {
+    return Colors.blue;
+  }
+
+  if (status == "SELESAI") {
+    return Colors.green;
+  }
+
+  return Colors.grey;
+}
+
+String statusIndonesia(String status) {
+
+  status = status.trim().toUpperCase();
+
+  switch (status) {
+
+    case "PENDING":
+      return "Menunggu";
+
+    case "DIPROSES":
+      return "Diproses";
+
+    case "SELESAI":
+      return "Selesai";
+
+    default:
+      return status;
+  }
+}
 
   @override
   Widget build(BuildContext context) {
@@ -105,7 +136,7 @@ class _DetailPengaduanPageState extends State<DetailPengaduanPage> {
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Text(
-                              statusText,
+                              statusIndonesia(statusText),
                               style: TextStyle(
                                 color: getStatusColor(statusText),
                                 fontSize: 11,
@@ -205,15 +236,15 @@ class _DetailPengaduanPageState extends State<DetailPengaduanPage> {
                       ),
                       _buildLine(),
                       _buildStatusItem(
-                        color: (statusText == "Diproses" || statusText == "Selesai") ? Colors.blue : Colors.grey.shade300,
+                        color: (statusText == "DIPROSES" || statusText == "SELESAI") ? Colors.blue : Colors.grey.shade300,
                         title: "Diproses",
-                        subtitle: (statusText == "Diproses" || statusText == "Selesai") ? "Admin telah menindaklanjuti laporan Anda" : "",
+                        subtitle: (statusText == "DIPROSES" || statusText == "SELESAI") ? "Admin telah menindaklanjuti laporan Anda" : "",
                       ),
                       _buildLine(),
                       _buildStatusItem(
-                        color: statusText == "Selesai" ? Colors.green : Colors.grey.shade300,
+                        color: statusText == "SELESAI" ? Colors.green : Colors.grey.shade300,
                         title: "Selesai",
-                        subtitle: statusText == "Selesai" ? "Laporan telah diselesaikan" : "",
+                        subtitle: statusText == "SELESAI" ? "Laporan telah diselesaikan" : "",
                       ),
 
                       const Spacer(),

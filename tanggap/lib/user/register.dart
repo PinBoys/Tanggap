@@ -47,7 +47,7 @@ class _RegisterPageState extends State<RegisterPage> {
       isLoading = true;
     });
 
-    String apiUrl = 'http://10.0.2.2:8000/api/register';
+    String apiUrl = 'http://127.0.0.1:8000/api/register';
 
     try {
       final response = await http.post(

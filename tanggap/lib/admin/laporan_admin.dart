@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'drawer_admin.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 class LaporanAdminPage extends StatefulWidget {
   const LaporanAdminPage({super.key});
@@ -12,7 +14,74 @@ class LaporanAdminPage extends StatefulWidget {
 class _LaporanAdminPageState
     extends State<LaporanAdminPage> {
 
+  int totalLaporan = 0;
+  int totalSelesai = 0;
+  int totalDiproses = 0;
+  int totalMenunggu = 0;
+
+  bool isLoading = true;
+
   String selectedFilter = "Bulan ini";
+
+  @override
+  void initState() {
+    super.initState();
+    getStatistik();
+  }
+
+  Future<void> getStatistik() async {
+
+  try {
+
+    final response = await http.get(
+      Uri.parse(
+        "http://127.0.0.1:8000/api/admin/complaints",
+      ),
+    );
+
+    final data =
+        jsonDecode(response.body);
+
+    if (data["status"] == "success") {
+
+      final List laporan =
+          data["data"];
+
+      setState(() {
+
+        totalLaporan =
+            laporan.length;
+
+        totalDiproses =
+            laporan.where(
+              (e) =>
+                  e["status"] ==
+                  "DIPROSES",
+            ).length;
+
+        totalSelesai =
+            laporan.where(
+              (e) =>
+                  e["status"] ==
+                  "SELESAI",
+            ).length;
+
+        totalMenunggu =
+            laporan.where(
+              (e) =>
+                  e["status"] ==
+                  "PENDING",
+            ).length;
+
+        isLoading = false;
+      });
+    }
+  } catch (e) {
+
+    print(e);
+
+  }
+}
 
   @override
   Widget build(BuildContext context) {
@@ -142,29 +211,29 @@ class _LaporanAdminPageState
               children: [
 
                 statistikCard(
-                  "Total Laporan",
-                  "123",
+                    "Total Laporan",
+                    totalLaporan.toString(),
                   Colors.blue.shade100,
                   Colors.blue,
                 ),
 
                 statistikCard(
                   "Selesai",
-                  "38",
+                  totalSelesai.toString(),
                   Colors.green.shade100,
                   Colors.green.shade800,
                 ),
 
                 statistikCard(
                   "Diproses",
-                  "55",
+                  totalDiproses.toString(),
                   Colors.purple.shade100,
                   Colors.purple,
                 ),
 
                 statistikCard(
                   "Menunggu",
-                  "20",
+                  totalMenunggu.toString(),
                   Colors.orange.shade100,
                   Colors.orange.shade800,
                 ),
@@ -320,7 +389,7 @@ class _LaporanAdminPageState
                   decoration:
                       BoxDecoration(
                     color:
-                        Colors.green,
+                        const Color(0xff0B6E4F),
                     borderRadius:
                         BorderRadius
                             .circular(10),

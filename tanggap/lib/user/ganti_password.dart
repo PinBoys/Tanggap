@@ -38,7 +38,7 @@ class _GantiPasswordPageState extends State<GantiPasswordPage> {
     });
 
     // URL diubah menyesuaikan route yang baru kita buat di Laravel
-    String apiUrl = 'http://10.0.2.2:8000/api/update-password';
+    String apiUrl = 'http://127.0.0.1:8000/api/update-password';
     
     try {
       final response = await http.post(

@@ -1,21 +1,116 @@
 import 'package:flutter/material.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
-class NotifikasiAdminPage extends StatelessWidget {
+class NotifikasiAdminPage extends StatefulWidget {
   const NotifikasiAdminPage({super.key});
+
+  @override
+  State<NotifikasiAdminPage> createState() =>
+      _NotifikasiAdminPageState();
+}
+
+class _NotifikasiAdminPageState
+    extends State<NotifikasiAdminPage> {
+
+  List notifikasi = [];
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    getNotifikasi();
+  }
+
+  Future<void> getNotifikasi() async {
+    try {
+      final response = await http.get(
+        Uri.parse(
+          "http://127.0.0.1:8000/api/admin/notifikasi",
+        ),
+      );
+
+      final data = jsonDecode(response.body);
+
+      if (data["status"] == "success") {
+        setState(() {
+          notifikasi = data["data"];
+          isLoading = false;
+        });
+      }
+    } catch (e) {
+      print("Error notifikasi: $e");
+
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
+
+    String statusIndonesia(String status) {
+  switch (status.toUpperCase()) {
+    case "PENDING":
+      return "Menunggu";
+
+    case "DIPROSES":
+      return "Diproses";
+
+    case "SELESAI":
+      return "Selesai";
+
+    default:
+      return status;
+  }
+}
+
+String pesanNotifikasi(
+    String judul,
+    String status,
+  ) {
+    switch (status.toUpperCase()) {
+      case "PENDING":
+        return "Pengaduan $judul sedang menunggu tindak lanjut";
+
+      case "DIPROSES":
+        return "Pengaduan $judul sedang diproses petugas";
+
+      case "SELESAI":
+        return "Pengaduan $judul telah selesai ditangani";
+
+      default:
+        return judul;
+    }
+  }
+
+  Color getStatusColor(String status) {
+    status = status.toUpperCase();
+
+    if (status == "PENDING") {
+      return Colors.orange;
+    }
+
+    if (status == "DIPROSES") {
+      return Colors.blue;
+    }
+
+    if (status == "SELESAI") {
+      return Colors.green;
+    }
+
+    return Colors.grey;
+  }
 
   @override
   Widget build(BuildContext context) {
 
     return Scaffold(
-
       backgroundColor: Colors.white,
 
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
 
-        iconTheme:
-            const IconThemeData(
+        iconTheme: const IconThemeData(
           color: Colors.black,
         ),
 
@@ -25,100 +120,56 @@ class NotifikasiAdminPage extends StatelessWidget {
           "Notifikasi",
           style: TextStyle(
             color: Colors.black,
-            fontWeight:
-                FontWeight.bold,
+            fontWeight: FontWeight.bold,
           ),
         ),
       ),
 
-      body: SingleChildScrollView(
-        padding:
-            const EdgeInsets.all(20),
+      body: isLoading
+          ? const Center(
+              child: CircularProgressIndicator(),
+            )
+          : ListView.builder(
+              padding: const EdgeInsets.all(20),
 
-        child: Column(
-          crossAxisAlignment:
-              CrossAxisAlignment.start,
+              itemCount: notifikasi.length,
 
-          children: [
+              itemBuilder: (context, index) {
 
-            // HARI INI
-            const Text(
-              "Hari ini",
-              style: TextStyle(
-                fontWeight:
-                    FontWeight.bold,
-                fontSize: 18,
-              ),
+                final item = notifikasi[index];
+
+                return notifItem(
+                  icon:
+                      item["status"] == "PENDING"
+                          ? Icons.schedule
+                          : item["status"] == "DIPROSES"
+                              ? Icons.build
+                              : Icons.check_circle,
+
+                  iconColor:
+                      item["status"] == "SELESAI"
+                          ? Colors.white
+                          : Colors.brown,
+
+                  bgColor: getStatusColor(
+                    item["status"],
+                  ).withOpacity(0.2),
+
+                  text: pesanNotifikasi(
+                        item["title"],
+                        item["status"],
+                      ),
+
+                  time: item["created_at"]
+                      .toString()
+                      .substring(11, 16),
+
+                  textColor: getStatusColor(
+                    item["status"],
+                  ),
+                );
+              },
             ),
-
-            const SizedBox(height: 20),
-
-            notifItem(
-              icon: Icons.notifications,
-              iconColor: Colors.brown,
-              bgColor: Colors.orange.shade100,
-              text:
-                  "Pengaduan #PGD-2026-00012 tentang Infrastruktur jalan sedang dalam Proses",
-              time: "17:10",
-              textColor: Colors.black,
-            ),
-
-            notifItem(
-              icon: Icons.notifications,
-              iconColor: Colors.brown,
-              bgColor: Colors.orange.shade100,
-              text:
-                  "Pengaduan #PGD-2026-00012 tentang Infrastruktur jalan dengan Prioritas Sedang",
-              time: "12:50",
-              textColor: Colors.orange,
-            ),
-
-            notifItem(
-              icon: Icons.check,
-              iconColor: Colors.white,
-              bgColor: Colors.greenAccent,
-              text:
-                  "Pengaduan #PGD-2026-00008 tentang Penerangan Jalan telah Selesai",
-              time: "08:23",
-              textColor: Colors.black,
-            ),
-
-            const SizedBox(height: 25),
-
-            // KEMARIN
-            const Text(
-              "Kemarin",
-              style: TextStyle(
-                fontWeight:
-                    FontWeight.bold,
-                fontSize: 18,
-              ),
-            ),
-
-            const SizedBox(height: 20),
-
-            notifItem(
-              icon: Icons.notifications,
-              iconColor: Colors.brown,
-              bgColor: Colors.orange.shade100,
-              text:
-                  "Pengaduan #PGD-2026-00008 tentang Penerangan Jalan sedang dalam Proses",
-              time: "14:30",
-              textColor: Colors.black,
-            ),
-
-            notifItem(
-              icon: Icons.notifications,
-              iconColor: Colors.brown,
-              bgColor: Colors.orange.shade100,
-              text:
-                  "Pengaduan #PGD-2026-00008 tentang Penerangan Jalan dengan Prioritas Tinggi",
-              time: "10:45",
-              textColor: Colors.orange,
-            ),
-          ],
-        ),
-      ),
     );
   }
 
@@ -132,13 +183,11 @@ class NotifikasiAdminPage extends StatelessWidget {
   }) {
 
     return Container(
-      margin:
-          const EdgeInsets.only(
+      margin: const EdgeInsets.only(
         bottom: 20,
       ),
 
-      padding:
-          const EdgeInsets.only(
+      padding: const EdgeInsets.only(
         bottom: 15,
       ),
 

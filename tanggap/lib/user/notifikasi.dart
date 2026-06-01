@@ -6,7 +6,7 @@ import 'detail_pengaduan.dart'; // <--- TAMBAHAN: Import halaman detail
 class NotifikasiPage extends StatefulWidget {
   final String emailTarget; 
   
-  const NotifikasiPage({super.key, this.emailTarget = "govin@gmail.com"});
+  const NotifikasiPage({super.key, this.emailTarget = "rya@gmail.com"});
 
   @override
   State<NotifikasiPage> createState() => _NotifikasiPageState();
@@ -24,7 +24,7 @@ class _NotifikasiPageState extends State<NotifikasiPage> {
 
   Future<void> fetchNotifikasi() async {
     try {
-      final response = await http.get(Uri.parse("http://10.0.2.2:8000/api/pengaduan/riwayat/${widget.emailTarget}"));
+      final response = await http.get(Uri.parse("http://127.0.0.1:8000/api/pengaduan/riwayat/${widget.emailTarget}"));
       
       if (response.statusCode == 200) {
         final data = json.decode(response.body)['data'];

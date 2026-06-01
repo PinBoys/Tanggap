@@ -6,7 +6,7 @@ import 'dart:io';
 class BuatPengaduanPage extends StatefulWidget {
   // Tambahkan email agar Laravel tahu ini pengaduan milik siapa
   final String emailTarget; 
-  const BuatPengaduanPage({super.key, this.emailTarget = "govin@gmail.com"});
+  const BuatPengaduanPage({super.key, this.emailTarget = "rya@gmail.com"});
 
   @override
   State<BuatPengaduanPage> createState() => _BuatPengaduanPageState();
@@ -27,7 +27,7 @@ class _BuatPengaduanPageState extends State<BuatPengaduanPage> {
   List<XFile> _imageFiles = [];
   bool isLoading = false;
 
-  final String apiUrl = "http://10.0.2.2:8000/api/pengaduan";
+  final String apiUrl = "http://127.0.0.1:8000/api/pengaduan";
 
   Future<void> _pickImages() async {
     if (_imageFiles.length >= 5) {

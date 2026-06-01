@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'drawer_admin.dart';
 import 'detail_pengaduan_admin.dart';
 
@@ -11,102 +12,82 @@ class DaftarPengaduanAdminPage extends StatefulWidget {
       _DaftarPengaduanAdminPageState();
 }
 
-class _DaftarPengaduanAdminPageState
-    extends State<DaftarPengaduanAdminPage> {
-
+class _DaftarPengaduanAdminPageState extends State<DaftarPengaduanAdminPage> {
   String selectedFilter = "Semua";
 
-  final List<Map<String, dynamic>> pengaduanList = [
+  List<dynamic> pengaduanList = [];
 
-    {
-      "kode": "# PGD-2026-00012",
-      "judul": "Jalan rusak di depan balai desa",
-      "lokasi": "Jl. Raya desa Buleleng",
-      "tanggal": "20 mei 2026",
-      "status": "Menunggu",
-    },
+  @override
+  void initState() {
+    super.initState();
+    getPengaduan();
+  }
 
-    {
-      "kode": "# PGD-2026-00011",
-      "judul": "Lampu jalan mati",
-      "lokasi": "Jl. Raya desa Melati",
-      "tanggal": "19 mei 2026",
-      "status": "Diproses",
-    },
+  Future<void> getPengaduan() async {
+    try {
+      final response = await http.get(
+        Uri.parse("http://127.0.0.1:8000/api/admin/complaints"),
+      );
 
-    {
-      "kode": "# PGD-2026-00010",
-      "judul": "Sampah menumpuk di TPS",
-      "lokasi": "desa Bantargebang",
-      "tanggal": "18 mei 2026",
-      "status": "Diproses",
-    },
+      final data = jsonDecode(response.body);
 
-    {
-      "kode": "# PGD-2026-00009",
-      "judul": "Saluran air tersumbat",
-      "lokasi": "desa Bubug",
-      "tanggal": "17 mei 2026",
-      "status": "Selesai",
-    },
+      if (response.statusCode == 200) {
+        setState(() {
+          pengaduanList = data['data'];
+        });
+      }
+    } catch (e) {
+      print(e);
+    }
+  }
 
-    {
-      "kode": "# PGD-2026-00008",
-      "judul": "Posyandu butuh perbaikan atap",
-      "lokasi": "Jl. Raya desa kesehatan",
-      "tanggal": "16 mei 2026",
-      "status": "Selesai",
-    },
-  ];
+  String statusIndonesia(String status) {
+    switch (status) {
+      case 'PENDING':
+        return 'Menunggu';
+
+      case 'DIPROSES':
+        return 'Diproses';
+
+      case 'SELESAI':
+        return 'Selesai';
+
+      default:
+        return status;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-
-    List<Map<String, dynamic>> filteredList;
+    List filteredList;
 
     if (selectedFilter == "Semua") {
-
       filteredList = pengaduanList;
-
     } else {
-
       filteredList = pengaduanList
-          .where(
-            (item) =>
-                item["status"] ==
-                selectedFilter,
-          )
+          .where((item) => statusIndonesia(item["status"]) == selectedFilter)
           .toList();
     }
 
     return Scaffold(
-
       backgroundColor: Colors.grey.shade100,
 
       // DRAWER ADMIN
       drawer: const DrawerAdmin(),
 
       appBar: AppBar(
-        backgroundColor:
-            const Color(0xff0B6E4F),
+        backgroundColor: const Color(0xff0B6E4F),
 
         title: const Text(
           "Daftar Pengaduan",
-          style: TextStyle(
-            color: Colors.white,
-          ),
+          style: TextStyle(color: Colors.white),
         ),
 
-        iconTheme:
-            const IconThemeData(
-          color: Colors.white,
-        ),
+        iconTheme: const IconThemeData(color: Colors.white),
 
         actions: const [
-
           Padding(
-            padding:
-                EdgeInsets.only(right: 15),
+            padding: EdgeInsets.only(right: 15),
 
             child: Icon(Icons.search),
           ),
@@ -118,15 +99,11 @@ class _DaftarPengaduanAdminPageState
 
         child: Column(
           children: [
-
             // FILTER
             Row(
-              mainAxisAlignment:
-                  MainAxisAlignment
-                      .spaceBetween,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
 
               children: [
-
                 filterButton("Semua"),
 
                 filterButton("Menunggu"),
@@ -142,85 +119,58 @@ class _DaftarPengaduanAdminPageState
             // LIST PENGADUAN
             Expanded(
               child: ListView.builder(
-                itemCount:
-                    filteredList.length,
+                itemCount: filteredList.length,
 
-                itemBuilder:
-                    (context, index) {
-
-                  final item =
-                      filteredList[index];
+                itemBuilder: (context, index) {
+                  final item = filteredList[index];
 
                   return GestureDetector(
-
                     onTap: () {
-
                       Navigator.push(
                         context,
 
                         MaterialPageRoute(
-                          builder:
-                              (context) =>
-                                  const DetailPengaduanAdminPage(),
+                          builder: (context) => DetailPengaduanAdminPage(
+                            pengaduan: Map<String, dynamic>.from(item),
+                          ),
                         ),
                       );
-
                     },
 
                     child: Container(
-                      margin:
-                          const EdgeInsets.only(
-                        bottom: 15,
-                      ),
+                      margin: const EdgeInsets.only(bottom: 15),
 
-                      padding:
-                          const EdgeInsets.all(15),
+                      padding: const EdgeInsets.all(15),
 
-                      decoration:
-                          BoxDecoration(
+                      decoration: BoxDecoration(
                         color: Colors.white,
 
-                        borderRadius:
-                            BorderRadius.circular(
-                                12),
+                        borderRadius: BorderRadius.circular(12),
 
-                        border: Border.all(
-                          color:
-                              Colors.grey.shade300,
-                        ),
+                        border: Border.all(color: Colors.grey.shade300),
                       ),
 
                       child: Column(
-                        crossAxisAlignment:
-                            CrossAxisAlignment
-                                .start,
+                        crossAxisAlignment: CrossAxisAlignment.start,
 
                         children: [
-
                           Row(
-                            mainAxisAlignment:
-                                MainAxisAlignment
-                                    .spaceBetween,
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
 
                             children: [
-
                               Text(
-                                item["kode"],
+                                item["id"].toString().substring(0, 8),
 
-                                style:
-                                    const TextStyle(
-                                  fontWeight:
-                                      FontWeight.bold,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
 
                               Text(
-                                item["tanggal"],
+                                item["created_at"] ?? "-",
 
-                                style:
-                                    TextStyle(
-                                  color: Colors
-                                      .grey.shade600,
+                                style: TextStyle(
+                                  color: Colors.grey.shade600,
 
                                   fontSize: 12,
                                 ),
@@ -228,73 +178,45 @@ class _DaftarPengaduanAdminPageState
                             ],
                           ),
 
-                          const SizedBox(
-                              height: 8),
+                          const SizedBox(height: 8),
 
                           Text(
-                            item["judul"],
+                            item["title"] ?? "-",
 
-                            style:
-                                const TextStyle(
-                              fontWeight:
-                                  FontWeight.bold,
-                            ),
+                            style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
 
-                          const SizedBox(
-                              height: 5),
+                          const SizedBox(height: 5),
 
                           Row(
-                            mainAxisAlignment:
-                                MainAxisAlignment
-                                    .spaceBetween,
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
 
                             children: [
-
                               Text(
-                                item["lokasi"],
+                                item["address_note"] ?? "-",
 
-                                style:
-                                    TextStyle(
-                                  color: Colors
-                                      .grey.shade600,
-                                ),
+                                style: TextStyle(color: Colors.grey.shade600),
                               ),
 
                               Container(
-                                padding:
-                                    const EdgeInsets
-                                        .symmetric(
+                                padding: const EdgeInsets.symmetric(
                                   horizontal: 12,
                                   vertical: 5,
                                 ),
 
-                                decoration:
-                                    BoxDecoration(
+                                decoration: BoxDecoration(
+                                  color: statusColor(item["status"]),
 
-                                  color:
-                                      statusColor(
-                                    item["status"],
-                                  ),
-
-                                  borderRadius:
-                                      BorderRadius
-                                          .circular(
-                                              20),
+                                  borderRadius: BorderRadius.circular(20),
                                 ),
 
                                 child: Text(
-                                  item["status"],
+                                  statusIndonesia(item["status"]),
 
-                                  style:
-                                      TextStyle(
-                                    color:
-                                        statusTextColor(
-                                      item["status"],
-                                    ),
+                                  style: TextStyle(
+                                    color: statusTextColor(item["status"]),
 
-                                    fontWeight:
-                                        FontWeight.bold,
+                                    fontWeight: FontWeight.bold,
 
                                     fontSize: 12,
                                   ),
@@ -316,52 +238,33 @@ class _DaftarPengaduanAdminPageState
   }
 
   Widget filterButton(String text) {
-
-    final isSelected =
-        selectedFilter == text;
+    final isSelected = selectedFilter == text;
 
     return GestureDetector(
-
       onTap: () {
-
         setState(() {
-
           selectedFilter = text;
-
         });
       },
 
       child: Container(
-        padding:
-            const EdgeInsets.symmetric(
-          horizontal: 12,
-          vertical: 8,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
 
         decoration: BoxDecoration(
+          color: isSelected ? Colors.blue : Colors.white,
 
-          color: isSelected
-              ? Colors.blue
-              : Colors.white,
+          borderRadius: BorderRadius.circular(8),
 
-          borderRadius:
-              BorderRadius.circular(8),
-
-          border: Border.all(
-            color: Colors.grey.shade300,
-          ),
+          border: Border.all(color: Colors.grey.shade300),
         ),
 
         child: Text(
           text,
 
           style: TextStyle(
-            color: isSelected
-                ? Colors.white
-                : Colors.black,
+            color: isSelected ? Colors.white : Colors.black,
 
-            fontWeight:
-                FontWeight.bold,
+            fontWeight: FontWeight.bold,
 
             fontSize: 12,
           ),
@@ -372,27 +275,35 @@ class _DaftarPengaduanAdminPageState
 
   Color statusColor(String status) {
 
-    if (status == "Menunggu") {
-      return Colors.orange.shade100;
-    }
+  if (status == "PENDING") {
+    return Colors.orange.shade100;
+  }
 
-    if (status == "Diproses") {
-      return Colors.orange.shade100;
-    }
+  if (status == "DIPROSES") {
+    return Colors.blue.shade100;
+  }
 
+  if (status == "SELESAI") {
     return Colors.green.shade100;
   }
 
+  return Colors.grey.shade200;
+}
+
   Color statusTextColor(String status) {
 
-    if (status == "Menunggu") {
-      return Colors.orange.shade800;
-    }
-
-    if (status == "Diproses") {
-      return Colors.orange.shade800;
-    }
-
-    return Colors.green;
+  if (status == "PENDING") {
+    return Colors.orange.shade800;
   }
+
+  if (status == "DIPROSES") {
+    return Colors.blue.shade800;
+  }
+
+  if (status == "SELESAI") {
+    return Colors.green.shade800;
+  }
+
+  return Colors.black;
+}
 }

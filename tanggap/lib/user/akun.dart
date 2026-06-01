@@ -7,7 +7,7 @@ import 'landingpage.dart';
 
 class AkunPage extends StatefulWidget {
   final String emailTarget; 
-  const AkunPage({super.key, this.emailTarget = "govin@gmail.com"});
+  const AkunPage({super.key, this.emailTarget = "rya@gmail.com"});
 
   @override
   State<AkunPage> createState() => _AkunPageState();
@@ -28,7 +28,7 @@ class _AkunPageState extends State<AkunPage> {
   }
 
   Future<void> fetchProfileData() async {
-    String apiUrl = "http://10.0.2.2:8000/api/profile/${widget.emailTarget}";
+    String apiUrl = "http://127.0.0.1:8000/api/profile/${widget.emailTarget}";
     try {
       final response = await http.get(Uri.parse(apiUrl));
       if (response.statusCode == 200) {
@@ -104,7 +104,7 @@ class _AkunPageState extends State<AkunPage> {
                           child: fotoProfil != null && fotoProfil!.isNotEmpty
                               ? ClipOval(
                                   child: Image.network(
-                                    "http://10.0.2.2:8000$fotoProfil",
+                                    "http://127.0.0.1:8000$fotoProfil",
                                     width: 60,
                                     height: 60,
                                     fit: BoxFit.cover,
@@ -298,7 +298,7 @@ class ProfilePage extends StatelessWidget {
                       child: fotoProfil != null && fotoProfil!.isNotEmpty
                           ? ClipOval(
                               child: Image.network(
-                                "http://10.0.2.2:8000$fotoProfil",
+                                "http://127.0.0.1:8000$fotoProfil",
                                 width: 100,
                                 height: 100,
                                 fit: BoxFit.cover,
@@ -419,7 +419,7 @@ class _EditProfilPageState extends State<EditProfilPage> {
   Future<void> simpanProfile() async {
     setState(() => isLoading = true);
     try {
-      var request = http.MultipartRequest('POST', Uri.parse('http://10.0.2.2:8000/api/profile/update'));
+      var request = http.MultipartRequest('POST', Uri.parse('http://127.0.0.1:8000/api/profile/update'));
       
       // Data Teks - Menggunakan parameter widget.email yang dikirim dari AkunPage secara sah
       request.fields['email'] = widget.email;
@@ -476,7 +476,7 @@ class _EditProfilPageState extends State<EditProfilPage> {
                     child: _imageFile != null
                         ? ClipOval(child: Image.file(_imageFile!, width: 100, height: 100, fit: BoxFit.cover))
                         : widget.fotoProfil != null && widget.fotoProfil!.isNotEmpty
-                            ? ClipOval(child: Image.network("http://10.0.2.2:8000${widget.fotoProfil}", width: 100, height: 100, fit: BoxFit.cover))
+                            ? ClipOval(child: Image.network("http://127.0.0.1:8000${widget.fotoProfil}", width: 100, height: 100, fit: BoxFit.cover))
                             : const Icon(Icons.person, size: 50, color: Colors.blue),
                   ),
                   Positioned(
@@ -578,7 +578,7 @@ class _UbahPasswordPageState extends State<UbahPasswordPage> {
     setState(() => isLoading = true);
     try {
       final response = await http.post(
-        Uri.parse('http://10.0.2.2:8000/api/profile/change-password'),
+        Uri.parse('http://127.0.0.1:8000/api/profile/change-password'),
         headers: {"Content-Type": "application/json", "Accept": "application/json"},
         body: jsonEncode({"email": widget.email, "old_password": oldPassController.text, "new_password": newPassController.text}),
       );
@@ -682,7 +682,7 @@ class _RiwayatPageState extends State<RiwayatPage> {
 
   Future<void> fetchRiwayat() async {
     try {
-      final response = await http.get(Uri.parse("http://10.0.2.2:8000/api/pengaduan/riwayat/${widget.email}"));
+      final response = await http.get(Uri.parse("http://127.0.0.1:8000/api/pengaduan/riwayat/${widget.email}"));
       if (response.statusCode == 200) {
         final data = json.decode(response.body)['data'];
         setState(() {

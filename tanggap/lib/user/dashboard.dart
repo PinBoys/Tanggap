@@ -27,7 +27,7 @@ class _DashboardPageState extends State<DashboardPage> {
   bool isLoading = true;
   List<Map<String, dynamic>> pengaduanTerbaru = [];
 
-  final String apiUrl = "http://10.0.2.2:8000/api/pengaduan/terbaru";
+  final String apiUrl = "http://127.0.0.1:8000/api/pengaduan/terbaru";
 
   @override
   void initState() {
@@ -60,18 +60,42 @@ class _DashboardPageState extends State<DashboardPage> {
     }
   }
 
-  Color getStatusColor(String status) {
-    switch (status) {
-      case "Menunggu":
-        return Colors.orange;
-      case "Diproses":
-        return Colors.deepOrange;
-      case "Selesai":
-        return Colors.green;
-      default:
-        return Colors.grey;
-    }
+Color getStatusColor(String status) {
+
+  status = status.toUpperCase();
+
+  if (status == "PENDING" || status == "MENUNGGU") {
+    return Colors.orange;
   }
+
+  if (status == "DIPROSES") {
+    return Colors.blue;
+  }
+
+  if (status == "SELESAI") {
+    return Colors.green;
+  }
+
+  return Colors.grey;
+}
+
+String statusIndonesia(String status) {
+
+  switch (status.toUpperCase()) {
+
+    case "PENDING":
+      return "Menunggu";
+
+    case "DIPROSES":
+      return "Diproses";
+
+    case "SELESAI":
+      return "Selesai";
+
+    default:
+      return status;
+  }
+}
 
   @override
   Widget build(BuildContext context) {
@@ -159,7 +183,7 @@ class _DashboardPageState extends State<DashboardPage> {
                       child: widget.fotoProfile != null && widget.fotoProfile!.isNotEmpty
                           ? ClipOval(
                               child: Image.network(
-                                "http://10.0.2.2:8000${widget.fotoProfile}",
+                                "http://127.0.0.1:8000${widget.fotoProfile}",
                                 width: 36,
                                 height: 36,
                                 fit: BoxFit.cover,
@@ -332,7 +356,7 @@ class _DashboardPageState extends State<DashboardPage> {
             borderRadius: BorderRadius.circular(8),
             child: fotoUrl != null && fotoUrl.isNotEmpty
                 ? Image.network(
-                    "http://10.0.2.2:8000$fotoUrl", 
+                    "http://127.0.0.1:8000$fotoUrl", 
                     width: 50,
                     height: 50,
                     fit: BoxFit.cover,
@@ -379,7 +403,7 @@ class _DashboardPageState extends State<DashboardPage> {
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
-              status,
+              statusIndonesia(status),
               style: TextStyle(
                 color: color,
                 fontSize: 11,

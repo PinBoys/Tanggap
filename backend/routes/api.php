@@ -3,6 +3,13 @@
 use App\Http\Controllers\Api\AuthController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\PengaduanController;
+use App\Http\Controllers\Api\AdminAuthController;
+use App\Http\Controllers\Api\Admin\AdminProfileController;
+use App\Http\Controllers\Api\Admin\NotifikasiController;
+use App\Http\Controllers\Api\Admin\DashboardController;
+
+//login Admin
+Route::post('/admin/login', [AdminAuthController::class, 'login']);
 
 // Jalur yang akan dipanggil oleh Flutter
 Route::post('/register', [AuthController::class, 'register']);
@@ -41,3 +48,18 @@ Route::post('/pengaduan', [App\Http\Controllers\Api\PengaduanController::class, 
 // Route untuk mengambil detail 1 pengaduan berdasarkan ID
 Route::get('/pengaduan/detail/{id}', [App\Http\Controllers\Api\PengaduanController::class, 'detail']);
 
+//Route pengaduan dashboard admin
+Route::get('/admin/complaints', [DashboardController::class, 'getComplaints']);
+
+//Route ubah status pengaduan
+Route::put('/admin/pengaduan/{id}/status', [PengaduanController::class, 'updateStatus']);
+
+//Route  notifikasi admin
+Route::get('/admin/notifikasi',[NotifikasiController::class, 'index']);
+
+//Route pengaturan akun admin
+Route::get('/admin/profile', [AdminProfileController::class, 'getProfile']);
+Route::post('/admin/profile/update', [AdminProfileController::class, 'updateProfile']);
+
+//ubah pw admin
+Route::post('/admin/change-password', [AdminProfileController::class, 'changePassword']);

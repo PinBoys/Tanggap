@@ -1,8 +1,101 @@
 import 'package:flutter/material.dart';
 import 'dashboard_admin.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
-class LoginAdminPage extends StatelessWidget {
+class LoginAdminPage extends StatefulWidget {
   const LoginAdminPage({super.key});
+
+  @override
+  State<LoginAdminPage> createState() => _LoginAdminPageState();
+}
+
+class _LoginAdminPageState extends State<LoginAdminPage> {
+  final TextEditingController emailCtrl = TextEditingController();
+  final TextEditingController passwordCtrl = TextEditingController();
+
+  bool isLoading = false;
+  bool isPasswordHidden = true;
+
+  final String apiUrl = "http://127.0.0.1:8000/api/admin/login";
+
+  Future<void> loginAdmin() async {
+    if (emailCtrl.text.isEmpty || passwordCtrl.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Email dan Password wajib diisi"),
+          backgroundColor: Colors.red,
+        ),
+      );
+
+      return;
+    }
+
+    setState(() => isLoading = true);
+
+    try {
+      final response = await http.post(
+        Uri.parse(apiUrl),
+
+        headers: {"Content-Type": "application/json"},
+
+        body: jsonEncode({
+          "email": emailCtrl.text,
+          "password": passwordCtrl.text,
+        }),
+      );
+
+      print(response.statusCode);
+      print(response.body);
+
+      if (response.body.startsWith("<!DOCTYPE")) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Laravel mengembalikan HTML"),
+            backgroundColor: Colors.red,
+          ),
+        );
+
+        return;
+      }
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200) {
+        if (!mounted) return;
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(data['message']),
+            backgroundColor: Colors.green,
+          ),
+        );
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const DashboardAdminPage()),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(data['message'] ?? "Login gagal"),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Terjadi error: $e"),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => isLoading = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -13,112 +106,129 @@ class LoginAdminPage extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.all(24),
 
-          child: Column(
-            children: [
+          child: SingleChildScrollView(
+            child: Column(
+              children: [
+                const SizedBox(height: 40),
 
-              const SizedBox(height: 40),
+                const Icon(Icons.account_circle, size: 90, color: Colors.green),
 
-              const Icon(
-                Icons.account_circle,
-                size: 90,
-                color: Colors.green,
-              ),
+                const SizedBox(height: 10),
 
-              const SizedBox(height: 10),
-
-              const Text(
-                "Login Admin",
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
+                const Text(
+                  "Login Admin",
+                  style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
                 ),
-              ),
 
-              const SizedBox(height: 10),
+                const SizedBox(height: 10),
 
-              const Text(
-                "Masuk Untuk Mengakses dashboard admin",
-                textAlign: TextAlign.center,
-              ),
-
-              const SizedBox(height: 40),
-
-              TextField(
-                decoration: InputDecoration(
-                  hintText: "Masukkan Email admin",
-                  filled: true,
-                  fillColor: Colors.grey.shade200,
-                  border: OutlineInputBorder(
-                    borderRadius:
-                        BorderRadius.circular(10),
-                    borderSide: BorderSide.none,
-                  ),
+                const Text(
+                  "Masuk Untuk Mengakses dashboard admin",
+                  textAlign: TextAlign.center,
                 ),
-              ),
 
-              const SizedBox(height: 20),
+                const SizedBox(height: 40),
 
-              TextField(
-                obscureText: true,
-                decoration: InputDecoration(
-                  hintText: "Masukkan Password",
-                  filled: true,
-                  fillColor: Colors.grey.shade200,
-                  border: OutlineInputBorder(
-                    borderRadius:
-                        BorderRadius.circular(10),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
-              ),
+                TextField(
+                  controller: emailCtrl,
 
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton(
-                  onPressed: () {},
-                  child: const Text(
-                    "Lupa Password?",
-                    style: TextStyle(
-                      color: Colors.blue,
+                  decoration: InputDecoration(
+                    hintText: "Masukkan Email admin",
+
+                    filled: true,
+
+                    fillColor: Colors.grey.shade200,
+
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+
+                      borderSide: BorderSide.none,
                     ),
                   ),
                 ),
-              ),
 
-              const SizedBox(height: 20),
+                const SizedBox(height: 20),
 
-              SizedBox(
-                width: double.infinity,
-                height: 50,
+                TextField(
+                  controller: passwordCtrl,
 
-                child: ElevatedButton(
-                  style:
-                      ElevatedButton.styleFrom(
-                    backgroundColor:
-                        Colors.green,
-                  ),
+                  obscureText: isPasswordHidden,
 
-                  onPressed: () {
+                  decoration: InputDecoration(
+                    hintText: "Masukkan Password",
 
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) =>
-                            const DashboardAdminPage(),
+                    filled: true,
+
+                    fillColor: Colors.grey.shade200,
+
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+
+                      borderSide: BorderSide.none,
+                    ),
+
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        isPasswordHidden
+                            ? Icons.visibility_off
+                            : Icons.visibility,
                       ),
-                    );
 
-                  },
-
-                  child: const Text(
-                    "Masuk",
-                    style: TextStyle(
-                      color: Colors.white,
+                      onPressed: () {
+                        setState(() {
+                          isPasswordHidden = !isPasswordHidden;
+                        });
+                      },
                     ),
                   ),
                 ),
-              ),
-            ],
+
+                Align(
+                  alignment: Alignment.centerRight,
+
+                  child: TextButton(
+                    onPressed: () {},
+
+                    child: const Text(
+                      "Lupa Password?",
+                      style: TextStyle(color: Colors.blue),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 20),
+
+                SizedBox(
+                  width: double.infinity,
+
+                  height: 50,
+
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                    ),
+
+                    onPressed: isLoading ? null : loginAdmin,
+
+                    child: isLoading
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : const Text(
+                            "Masuk",
+
+                            style: TextStyle(color: Colors.white),
+                          ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
