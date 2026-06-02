@@ -22,6 +22,42 @@ class _TindakLanjutAdminPageState
 
   late String status;
 
+  String formatStatus(String status) {
+
+  switch (status.toUpperCase()) {
+
+    case "PENDING":
+      return "Menunggu";
+
+    case "DIPROSES":
+      return "Diproses";
+
+    case "SELESAI":
+      return "Selesai";
+
+    default:
+      return status;
+  }
+}
+
+Color statusColor(String status) {
+
+  switch (status.toUpperCase()) {
+
+    case "PENDING":
+      return Colors.orange;
+
+    case "DIPROSES":
+      return Colors.blue;
+
+    case "SELESAI":
+      return Colors.green;
+
+    default:
+      return Colors.grey;
+  }
+}
+
   @override
   void initState() {
     super.initState();
@@ -117,10 +153,10 @@ Future<bool> updateStatus() async {
                     vertical: 5,
                   ),
 
-                  decoration:
-                      BoxDecoration(
-                    color: Colors
-                        .orange.shade100,
+                  decoration: BoxDecoration(
+                    color: statusColor(
+                      widget.pengaduan["status"],
+                    ).withValues(alpha: 0.15),
 
                     borderRadius:
                         BorderRadius.circular(
@@ -128,15 +164,15 @@ Future<bool> updateStatus() async {
                   ),
 
                   child: Text(
-                    widget.pengaduan["status"] ??
-                        "-",
+                    formatStatus(
+                      widget.pengaduan["status"] ?? "",
+                    ),
 
                     style: TextStyle(
-                      color: Colors
-                          .orange.shade800,
-
-                      fontWeight:
-                          FontWeight.bold,
+                      color: statusColor(
+                        widget.pengaduan["status"] ?? "",
+                      ),
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
                 ),

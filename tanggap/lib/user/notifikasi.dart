@@ -6,7 +6,7 @@ import 'detail_pengaduan.dart'; // <--- TAMBAHAN: Import halaman detail
 class NotifikasiPage extends StatefulWidget {
   final String emailTarget; 
   
-  const NotifikasiPage({super.key, this.emailTarget = "rya@gmail.com"});
+  const NotifikasiPage({super.key, required this.emailTarget});
 
   @override
   State<NotifikasiPage> createState() => _NotifikasiPageState();

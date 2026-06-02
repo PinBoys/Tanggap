@@ -14,7 +14,7 @@ class DashboardAdminPage extends StatefulWidget {
 
 class _DashboardAdminPageState extends State<DashboardAdminPage> {
 
-  String namaAdmin = "Admin Desa";
+  String namaAdmin = "loading...";
 
   int totalLaporan = 0;
   int selesai = 0;

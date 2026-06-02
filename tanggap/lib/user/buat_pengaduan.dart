@@ -6,7 +6,7 @@ import 'dart:io';
 class BuatPengaduanPage extends StatefulWidget {
   // Tambahkan email agar Laravel tahu ini pengaduan milik siapa
   final String emailTarget; 
-  const BuatPengaduanPage({super.key, this.emailTarget = "rya@gmail.com"});
+  const BuatPengaduanPage({super.key, required this.emailTarget});
 
   @override
   State<BuatPengaduanPage> createState() => _BuatPengaduanPageState();

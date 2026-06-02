@@ -8,16 +8,16 @@ import 'pengaduan.dart';
 import 'notifikasi.dart';
 
 class DashboardPage extends StatefulWidget {
-  final String namaUser; 
-  final String emailUser; // <--- SEKARANG WAJIB MEMBAWA EMAIL USER YANG LOGIN
-  final String? fotoProfile; // Parameter foto profile (Bisa null jika belum upload)
+  final String namaUser;
+  final String emailUser;
+  final String? fotoProfile;
 
   const DashboardPage({
-    super.key, 
-    required this.namaUser, 
-    required this.emailUser, // Masukkan ke constructor wajib
-    this.fotoProfile, 
-  }); 
+    super.key,
+    required this.namaUser,
+    required this.emailUser,
+    this.fotoProfile,
+  });
 
   @override
   State<DashboardPage> createState() => _DashboardPageState();
@@ -26,76 +26,121 @@ class DashboardPage extends StatefulWidget {
 class _DashboardPageState extends State<DashboardPage> {
   bool isLoading = true;
   List<Map<String, dynamic>> pengaduanTerbaru = [];
-
-  final String apiUrl = "http://127.0.0.1:8000/api/pengaduan/terbaru";
+  String? fotoSekarang;
+  String namaSekarang = "";
 
   @override
   void initState() {
     super.initState();
+    namaSekarang = widget.namaUser;
+    fotoSekarang = widget.fotoProfile;
     fetchPengaduanTerbaru();
+    getLiveProfileFoto();
+    getLiveProfile();
+  }
+
+  Future<void> getLiveProfileFoto() async {
+    try {
+      final res = await http.get(
+        Uri.parse("http://127.0.0.1:8000/api/profile/${widget.emailUser}"),
+      );
+      if (res.statusCode == 200) {
+        final dataProfil = json.decode(res.body)['data'];
+        if (mounted) {
+          setState(() {
+            fotoSekarang = dataProfil['foto_profil'];
+          });
+        }
+      }
+    } catch (e) {
+      print("Gagal sync foto dashboard: $e");
+    }
+  }
+
+  Future<void> getLiveProfile() async {
+    try {
+      final res = await http.get(
+        Uri.parse("http://127.0.0.1:8000/api/profile/${widget.emailUser}"),
+      );
+
+      if (res.statusCode == 200) {
+        final dataProfil = jsonDecode(res.body)["data"];
+
+        if (mounted) {
+          setState(() {
+            namaSekarang = dataProfil["full_name"] ?? widget.namaUser;
+          });
+        }
+      }
+    } catch (e) {
+      print("Gagal sync nama: $e");
+    }
   }
 
   Future<void> fetchPengaduanTerbaru() async {
+    // --- PERUBAHAN DI SINI ---
+    // Menggunakan API riwayat berdasarkan email agar tidak campur dengan pengaduan orang lain
+    final String apiUrl =
+        "http://127.0.0.1:8000/api/pengaduan/riwayat/${widget.emailUser}";
+
     try {
       final response = await http.get(Uri.parse(apiUrl));
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body)['data'];
-        setState(() {
-          pengaduanTerbaru = data.map((item) => {
-            "judul": item['judul'] ?? "Tanpa Judul",
-            "tanggal": item['tanggal_pengaduan'] ?? "-",
-            "status": item['status'] ?? "Menunggu",
-            "foto": item['bukti_pengaduan'], 
-          }).toList();
-          isLoading = false;
-        });
+        if (mounted) {
+          setState(() {
+            pengaduanTerbaru = data
+                .map(
+                  (item) => {
+                    "judul": item['judul'] ?? "Tanpa Judul",
+                    "tanggal": item['tanggal_pengaduan'] ?? "-",
+                    "status": item['status'] ?? "Menunggu",
+                    "foto": item['bukti_pengaduan'],
+                  },
+                )
+                .toList();
+            isLoading = false;
+          });
+        }
       } else {
-        setState(() => isLoading = false);
+        if (mounted) setState(() => isLoading = false);
       }
     } catch (e) {
       print("Error: $e");
-      setState(() {
-        isLoading = false;
-      });
+      if (mounted) setState(() => isLoading = false);
     }
   }
 
-Color getStatusColor(String status) {
+  Color getStatusColor(String status) {
+    status = status.toUpperCase();
 
-  status = status.toUpperCase();
+    if (status == "PENDING" || status == "MENUNGGU") {
+      return Colors.orange;
+    }
 
-  if (status == "PENDING" || status == "MENUNGGU") {
-    return Colors.orange;
+    if (status == "DIPROSES") {
+      return Colors.blue;
+    }
+
+    if (status == "SELESAI") {
+      return Colors.green;
+    }
+
+    return Colors.grey;
   }
 
-  if (status == "DIPROSES") {
-    return Colors.blue;
+  String statusIndonesia(String status) {
+    switch (status.toUpperCase()) {
+      case "PENDING":
+        return "Menunggu";
+      case "DIPROSES":
+        return "Diproses";
+      case "SELESAI":
+        return "Selesai";
+      default:
+        return status;
+    }
   }
-
-  if (status == "SELESAI") {
-    return Colors.green;
-  }
-
-  return Colors.grey;
-}
-
-String statusIndonesia(String status) {
-
-  switch (status.toUpperCase()) {
-
-    case "PENDING":
-      return "Menunggu";
-
-    case "DIPROSES":
-      return "Diproses";
-
-    case "SELESAI":
-      return "Selesai";
-
-    default:
-      return status;
-  }
-}
 
   @override
   Widget build(BuildContext context) {
@@ -109,22 +154,40 @@ String statusIndonesia(String status) {
         currentIndex: 0,
         onTap: (index) {
           if (index == 4) {
-            // JALUR AMAN: Oper emailTarget ke AkunPage menggunakan email milik akun login saat ini
             Navigator.push(
-              context, 
+              context,
               MaterialPageRoute(
-                builder: (context) => AkunPage(emailTarget: widget.emailUser)
-              )
-            );
+                builder: (context) => AkunPage(emailTarget: widget.emailUser),
+              ),
+            ).then((_) {
+              getLiveProfileFoto();
+
+              getLiveProfile();
+            });
           }
           if (index == 1) {
-            Navigator.push(context, MaterialPageRoute(builder: (context) => const PengaduanPage()));
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const PengaduanPage()),
+            );
           }
           if (index == 2) {
-            Navigator.push(context, MaterialPageRoute(builder: (context) => const BuatPengaduanPage()));
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) =>
+                    BuatPengaduanPage(emailTarget: widget.emailUser),
+              ),
+            );
           }
           if (index == 3) {
-            Navigator.push(context, MaterialPageRoute(builder: (context) => const NotifikasiPage()));
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) =>
+                    NotifikasiPage(emailTarget: widget.emailUser),
+              ),
+            );
           }
         },
         items: const [
@@ -159,7 +222,10 @@ String statusIndonesia(String status) {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text("Halo, ${widget.namaUser}", style: const TextStyle(fontSize: 16)),
+                        Text(
+                          "Halo, $namaSekarang",
+                          style: const TextStyle(fontSize: 16),
+                        ),
                         const SizedBox(height: 5),
                         const Text(
                           "selamat datang di",
@@ -176,22 +242,24 @@ String statusIndonesia(String status) {
                       ],
                     ),
 
-                    // LOGIKA FOTO PROFILE PADA HEADER
                     CircleAvatar(
                       radius: 18,
                       backgroundColor: Colors.transparent,
-                      child: widget.fotoProfile != null && widget.fotoProfile!.isNotEmpty
+                      child: fotoSekarang != null && fotoSekarang!.isNotEmpty
                           ? ClipOval(
                               child: Image.network(
-                                "http://127.0.0.1:8000${widget.fotoProfile}",
+                                fotoSekarang!.startsWith('http')
+                                    ? fotoSekarang!
+                                    : "http://10.0.2.2:8000$fotoSekarang",
                                 width: 36,
                                 height: 36,
                                 fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) => const Icon(
-                                  Icons.account_circle,
-                                  size: 35,
-                                  color: Colors.black,
-                                ),
+                                errorBuilder: (context, error, stackTrace) =>
+                                    const Icon(
+                                      Icons.account_circle,
+                                      size: 35,
+                                      color: Colors.black,
+                                    ),
                               ),
                             )
                           : const Icon(
@@ -263,7 +331,9 @@ String statusIndonesia(String status) {
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
-                                      builder: (context) => const BuatPengaduanPage(),
+                                      builder: (context) => BuatPengaduanPage(
+                                        emailTarget: widget.emailUser,
+                                      ),
                                     ),
                                   );
                                 },
@@ -315,22 +385,33 @@ String statusIndonesia(String status) {
 
                 const SizedBox(height: 15),
 
-                isLoading 
-                    ? const Center(child: CircularProgressIndicator()) 
+                isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : pengaduanTerbaru.isEmpty
+                    ? Center(
+                        child: Padding(
+                          padding: const EdgeInsets.only(top: 20),
+                          child: Text(
+                            "Belum ada pengaduan",
+                            style: TextStyle(color: Colors.grey.shade500),
+                          ),
+                        ),
+                      )
                     : Column(
                         children: pengaduanTerbaru.map((item) {
-                          // PROTEKSI ANTI-LAYAR MERAH: Konversi paksa data null menjadi teks default yang aman
-                          String title = item["judul"]?.toString() ?? "Tanpa Judul";
+                          String title =
+                              item["judul"]?.toString() ?? "Tanpa Judul";
                           String tanggal = item["tanggal"]?.toString() ?? "-";
-                          String status = item["status"]?.toString() ?? "Menunggu";
+                          String status =
+                              item["status"]?.toString() ?? "Menunggu";
                           String? foto = item["foto"]?.toString();
 
                           return buildPengaduan(
                             title,
-                            tanggal, 
+                            tanggal,
                             status,
                             getStatusColor(status),
-                            foto, 
+                            foto,
                           );
                         }).toList(),
                       ),
@@ -342,7 +423,13 @@ String statusIndonesia(String status) {
     );
   }
 
-  Widget buildPengaduan(String title, String tanggal, String status, Color color, String? fotoUrl) {
+  Widget buildPengaduan(
+    String title,
+    String tanggal,
+    String status,
+    Color color,
+    String? fotoUrl,
+  ) {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(10),
@@ -356,7 +443,7 @@ String statusIndonesia(String status) {
             borderRadius: BorderRadius.circular(8),
             child: fotoUrl != null && fotoUrl.isNotEmpty
                 ? Image.network(
-                    "http://127.0.0.1:8000$fotoUrl", 
+                    "http://10.0.2.2:8000$fotoUrl",
                     width: 50,
                     height: 50,
                     fit: BoxFit.cover,
@@ -371,7 +458,10 @@ String statusIndonesia(String status) {
                     width: 50,
                     height: 50,
                     color: Colors.grey.shade200,
-                    child: const Icon(Icons.image_not_supported, color: Colors.grey),
+                    child: const Icon(
+                      Icons.image_not_supported,
+                      color: Colors.grey,
+                    ),
                   ),
           ),
 
@@ -384,12 +474,12 @@ String statusIndonesia(String status) {
                 Text(
                   title,
                   style: const TextStyle(fontWeight: FontWeight.w500),
-                  maxLines: 1, 
+                  maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 5),
                 Text(
-                  tanggal, 
+                  tanggal,
                   style: const TextStyle(fontSize: 11, color: Colors.grey),
                 ),
               ],

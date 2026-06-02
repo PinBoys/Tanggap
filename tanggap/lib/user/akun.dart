@@ -7,7 +7,7 @@ import 'landingpage.dart';
 
 class AkunPage extends StatefulWidget {
   final String emailTarget; 
-  const AkunPage({super.key, this.emailTarget = "rya@gmail.com"});
+  const AkunPage({super.key, required this.emailTarget});
 
   @override
   State<AkunPage> createState() => _AkunPageState();
