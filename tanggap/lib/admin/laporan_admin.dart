@@ -20,6 +20,7 @@ class _LaporanAdminPageState
   int totalMenunggu = 0;
 
   bool isLoading = true;
+  List grafikMingguan = [];
 
   String selectedFilter = "Bulan ini";
 
@@ -35,7 +36,7 @@ class _LaporanAdminPageState
 
     final response = await http.get(
       Uri.parse(
-        "http://127.0.0.1:8000/api/admin/complaints",
+        "http://10.0.2.2:8000/api/admin/complaints?filter=$selectedFilter",
       ),
     );
 
@@ -46,9 +47,13 @@ class _LaporanAdminPageState
 
       final List laporan =
           data["data"];
+      final List grafik =
+          data["grafik_mingguan"];
 
       setState(() {
 
+        grafikMingguan = grafik;
+        
         totalLaporan =
             laporan.length;
 
@@ -183,10 +188,13 @@ class _LaporanAdminPageState
 
                       setState(() {
 
-                        selectedFilter =
-                            value.toString();
+                        selectedFilter = value.toString();
+
+                        isLoading = true;
 
                       });
+
+                      getStatistik();
 
                     },
                   ),
@@ -247,36 +255,21 @@ class _LaporanAdminPageState
               "Grafik Pengaduan",
               style: TextStyle(
                 fontSize: 18,
-                fontWeight:
-                    FontWeight.bold,
+                fontWeight: FontWeight.bold,
               ),
             ),
 
             const SizedBox(height: 20),
 
-            grafikItem(
-              "Dusun Graha",
-              10,
-            ),
+            Column(
+              children: grafikMingguan.map((item) {
 
-            grafikItem(
-              "Dusun Melati",
-              25,
-            ),
+                return grafikItem(
+                  item["hari"],
+                  (item["total"] as num).toDouble(),
+                );
 
-            grafikItem(
-              "Dusun Mawar",
-              15,
-            ),
-
-            grafikItem(
-              "Dusun Sayur",
-              20,
-            ),
-
-            grafikItem(
-              "Dusun Marga",
-              5,
+              }).toList(),
             ),
           ],
         ),

@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 
 import 'dashboard_admin.dart';
+import 'logout_admin.dart';
 
 class PengaturanAdminPage extends StatefulWidget {
   const PengaturanAdminPage({super.key});
@@ -19,14 +20,11 @@ class _PengaturanAdminPageState extends State<PengaturanAdminPage> {
   final teleponController = TextEditingController();
 
   //edit pw
-  final passwordLamaController =
-    TextEditingController();
+  final passwordLamaController = TextEditingController();
 
-  final passwordBaruController =
-      TextEditingController();
+  final passwordBaruController = TextEditingController();
 
-  final konfirmasiController =
-      TextEditingController();
+  final konfirmasiController = TextEditingController();
 
   bool hide1 = true;
   bool hide2 = true;
@@ -38,12 +36,10 @@ class _PengaturanAdminPageState extends State<PengaturanAdminPage> {
     getProfile();
   }
 
-    Future<void> getProfile() async {
+  Future<void> getProfile() async {
     try {
       final response = await http.get(
-        Uri.parse(
-          "http://127.0.0.1:8000/api/admin/profile",
-        ),
+        Uri.parse("http://10.0.2.2:8000/api/admin/profile"),
       );
 
       print(response.body);
@@ -51,14 +47,11 @@ class _PengaturanAdminPageState extends State<PengaturanAdminPage> {
       final data = jsonDecode(response.body);
 
       if (data["status"] == "success") {
-        namaController.text =
-            data["data"]["full_name"] ?? "";
+        namaController.text = data["data"]["full_name"] ?? "";
 
-        emailController.text =
-            data["data"]["email"] ?? "";
+        emailController.text = data["data"]["email"] ?? "";
 
-        teleponController.text =
-            data["data"]["phone"] ?? "";
+        teleponController.text = data["data"]["phone"] ?? "";
 
         setState(() {});
       }
@@ -66,10 +59,11 @@ class _PengaturanAdminPageState extends State<PengaturanAdminPage> {
       print("ERROR PROFILE = $e");
     }
   }
+
   Future<void> updateProfile() async {
     try {
       final response = await http.post(
-        Uri.parse("http://127.0.0.1:8000/api/admin/profile/update"),
+        Uri.parse("http://10.0.2.2:8000/api/admin/profile/update"),
 
         body: {
           "full_name": namaController.text,
@@ -83,76 +77,64 @@ class _PengaturanAdminPageState extends State<PengaturanAdminPage> {
       final data = jsonDecode(response.body);
 
       if (data["status"] == "success") {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Profil berhasil diperbarui")),
+        );
+      }
+    } catch (e) {
+      print(e);
+    }
+  }
 
+  Future<void> changePassword() async {
+    if (passwordBaruController.text != konfirmasiController.text) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            "Profil berhasil diperbarui",
-          ),
-        ),
+        const SnackBar(content: Text("Konfirmasi password tidak cocok")),
       );
+
+      return;
     }
 
-  } catch (e) {
-    print(e);
-  }
-}
+    final response = await http.post(
+      Uri.parse("http://10.0.2.2:8000/api/admin/change-password"),
 
- Future<void> changePassword() async {
+      body: {
+        "old_password": passwordLamaController.text,
 
-  if (
-      passwordBaruController.text !=
-      konfirmasiController.text
-  ) {
-
-    ScaffoldMessenger.of(context)
-        .showSnackBar(
-      const SnackBar(
-        content: Text(
-          "Konfirmasi password tidak cocok",
-        ),
-      ),
+        "new_password": passwordBaruController.text,
+      },
     );
 
-    return;
+    final data = jsonDecode(response.body);
+
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(data["message"])));
+
+    if (data["status"] == "success") {
+      passwordLamaController.clear();
+      passwordBaruController.clear();
+      konfirmasiController.clear();
+
+      await Future.delayed(const Duration(milliseconds: 700));
+
+      if (!mounted) return;
+
+      setState(() {
+        selectedPage = 0;
+      });
+    }
   }
-
-  final response = await http.post(
-    Uri.parse(
-      "http://127.0.0.1:8000/api/admin/change-password",
-    ),
-
-    body: {
-
-      "old_password":
-          passwordLamaController.text,
-
-      "new_password":
-          passwordBaruController.text,
-    },
-  );
-
-  final data =
-      jsonDecode(response.body);
-
-  ScaffoldMessenger.of(context)
-      .showSnackBar(
-    SnackBar(
-      content: Text(
-        data["message"],
-      ),
-    ),
-  );
-}
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xffF5F6FA),
 
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: const Color(0xffF5F6FA),
         elevation: 0,
+        scrolledUnderElevation: 0,
 
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black),
@@ -207,109 +189,243 @@ class _PengaturanAdminPageState extends State<PengaturanAdminPage> {
   // =====================
 
   Widget halamanPengaturan() {
-    return Padding(
+    return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
-
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SizedBox(height: 20),
+          //================ PROFILE CARD =================//
+          Container(
+            padding: const EdgeInsets.all(22),
+            decoration: BoxDecoration(
+              color: const Color(0xff0B6E4F),
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(.08),
+                  blurRadius: 15,
+                  offset: const Offset(0, 5),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                CircleAvatar(
+                  radius: 48,
+                  backgroundColor: Colors.green.shade50,
+                  child: const Icon(
+                    Icons.admin_panel_settings,
+                    size: 55,
+                    color: Colors.green,
+                  ),
+                ),
 
-          const CircleAvatar(
-            radius: 55,
-            backgroundColor: Colors.black12,
+                const SizedBox(width: 20),
 
-            child: Icon(Icons.person_outline, size: 70, color: Colors.black),
-          ),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        namaController.text.isEmpty
+                            ? "Loading..."
+                            : namaController.text,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
 
-          const SizedBox(height: 20),
+                      const SizedBox(height: 5),
 
-          Text(
-            namaController.text.isEmpty
-                ? "Loading..."
-                : namaController.text,
+                      Text(
+                        emailController.text,
+                        style: TextStyle(color: Colors.white, fontSize: 18),
+                      ),
 
-            style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
+                      const SizedBox(height: 15),
+
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.green.shade50,
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: const [
+                            Icon(
+                              Icons.verified_user,
+                              color: Colors.green,
+                              size: 18,
+                            ),
+
+                            SizedBox(width: 6),
+
+                            Text(
+                              "Administrator",
+                              style: TextStyle(
+                                color: Colors.green,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
 
-          const SizedBox(height: 5),
+          const SizedBox(height: 35),
 
-          Text(
-            emailController.text,
-
-            style: TextStyle(
-              color: Colors.grey.shade600,
-            ),
-          ),
-
-          const SizedBox(height: 40),
-
-          // AKUN ADMIN
-          ListTile(
-            leading: Container(
-              padding: const EdgeInsets.all(8),
-
-              decoration: BoxDecoration(
-                color: Colors.green.shade100,
-
-                borderRadius: BorderRadius.circular(8),
+          Row(
+            children: const [
+              Text(
+                "AKUN",
+                style: TextStyle(
+                  color: Colors.grey,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
 
-              child: const Icon(Icons.person, color: Colors.green),
-            ),
+              SizedBox(width: 10),
 
-            title: const Text(
-              "Akun Admin",
-
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-
-            subtitle: const Text("Ubah informasi akun admin"),
-
-            onTap: () {
-              setState(() {
-                selectedPage = 1;
-              });
-            },
+              Expanded(child: Divider()),
+            ],
           ),
 
           const SizedBox(height: 15),
 
-          // KEAMANAN
-          ListTile(
-            leading: Container(
-              padding: const EdgeInsets.all(8),
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(22),
+              boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 12)],
+            ),
+            child: Column(
+              children: [
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.green.shade50,
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: const Icon(Icons.person, color: Colors.green),
+                  ),
 
-              decoration: BoxDecoration(
-                color: Colors.grey.shade300,
+                  title: const Text(
+                    "Akun Admin",
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
 
-                borderRadius: BorderRadius.circular(8),
+                  subtitle: const Text("Ubah informasi akun admin"),
+
+                  trailing: const Icon(Icons.chevron_right),
+
+                  onTap: () {
+                    setState(() {
+                      selectedPage = 1;
+                    });
+                  },
+                ),
+
+                const Divider(height: 1),
+
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: const Icon(Icons.lock),
+                  ),
+
+                  title: const Text(
+                    "Keamanan",
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+
+                  subtitle: const Text("Ubah password akun"),
+
+                  trailing: const Icon(Icons.chevron_right),
+
+                  onTap: () {
+                    setState(() {
+                      selectedPage = 2;
+                    });
+                  },
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 35),
+
+          Row(
+            children: const [
+              Text(
+                "LAINNYA",
+                style: TextStyle(
+                  color: Colors.grey,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
 
-              child: const Icon(Icons.lock, color: Colors.black),
+              SizedBox(width: 10),
+
+              Expanded(child: Divider()),
+            ],
+          ),
+
+          const SizedBox(height: 15),
+
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.red.shade100,
+              borderRadius: BorderRadius.circular(22),
+              boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 12)],
             ),
+            child: ListTile(
+              leading: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.red.shade50,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: const Icon(Icons.logout, color: Colors.red),
+              ),
 
-            title: const Text(
-              "Keamanan",
+              title: const Text(
+                "Keluar",
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
 
-              style: TextStyle(fontWeight: FontWeight.bold),
+              subtitle: const Text("Keluar dari akun admin"),
+
+              trailing: const Icon(Icons.chevron_right),
+
+              onTap: () {
+                Navigator.push(
+                  context,
+
+                  MaterialPageRoute(builder: (_) => const LogoutAdminPage()),
+                );
+              },
             ),
-
-            subtitle: const Text("Ubah password akun"),
-
-            onTap: () {
-              setState(() {
-                selectedPage = 2;
-              });
-            },
           ),
         ],
       ),
     );
   }
-
   // =====================
   // HALAMAN AKUN
   // =====================
@@ -420,15 +536,17 @@ class _PengaturanAdminPageState extends State<PengaturanAdminPage> {
           ),
           const SizedBox(height: 20),
 
-         passwordField(
-              "Password baru",
-              "Masukkan password baru",
-              passwordBaruController,
-              hide2, () {
-            setState(() {
-              hide2 = !hide2;
-            });
-          }),
+          passwordField(
+            "Password baru",
+            "Masukkan password baru",
+            passwordBaruController,
+            hide2,
+            () {
+              setState(() {
+                hide2 = !hide2;
+              });
+            },
+          ),
 
           const SizedBox(height: 20),
 
@@ -454,9 +572,7 @@ class _PengaturanAdminPageState extends State<PengaturanAdminPage> {
               style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
 
               onPressed: () async {
-
                 await changePassword();
-
               },
 
               child: const Text(

@@ -3,10 +3,12 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:io'; // Untuk menangani file gambar
 import 'package:image_picker/image_picker.dart'; // Untuk membuka galeri HP
+import '../helper/image_helper.dart';
 import 'landingpage.dart';
+import '../helper/url_helper.dart';
 
 class AkunPage extends StatefulWidget {
-  final String emailTarget; 
+  final String emailTarget;
   const AkunPage({super.key, required this.emailTarget});
 
   @override
@@ -28,23 +30,45 @@ class _AkunPageState extends State<AkunPage> {
   }
 
   Future<void> fetchProfileData() async {
-    String apiUrl = "http://127.0.0.1:8000/api/profile/${widget.emailTarget}";
+    String apiUrl = "http://10.0.2.2:8000/api/profile/${widget.emailTarget}";
+
     try {
       final response = await http.get(Uri.parse(apiUrl));
+
+      print("========== PROFILE ==========");
+      print(response.body);
+      print("=============================");
+
       if (response.statusCode == 200) {
         final data = json.decode(response.body)['data'];
+
+        if (!mounted) return;
+
         setState(() {
           namaLengkap = data['full_name'] ?? "Tanpa Nama";
           emailUser = data['email'] ?? widget.emailTarget;
           noHp = data['phone'] ?? "Belum diatur";
           alamat = data['alamat'] ?? "Belum diatur";
-          fotoProfil = data['foto_profil']; // Mengambil foto profil dari database
+          
+          // PERBAIKAN: Cache-buster disematkan di sini, BUKAN di fungsi build()
+          String? rawFoto = data['foto_profil'];
+          if (rawFoto != null && rawFoto.isNotEmpty) {
+            fotoProfil = "$rawFoto?v=${DateTime.now().millisecondsSinceEpoch}";
+          } else {
+            fotoProfil = null;
+          }
+          
           isLoading = false;
         });
       } else {
+        if (!mounted) return;
         setState(() => isLoading = false);
       }
     } catch (e) {
+      print(e);
+
+      if (!mounted) return;
+
       setState(() => isLoading = false);
     }
   }
@@ -57,171 +81,227 @@ class _AkunPageState extends State<AkunPage> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.black, size: 20),
+          icon: const Icon(
+            Icons.arrow_back_ios_new,
+            color: Colors.black,
+            size: 20,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
         centerTitle: true,
         title: const Text(
-          "Akun Saya", 
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 18)
+          "Akun Saya",
+          style: TextStyle(
+            color: Colors.black,
+            fontWeight: FontWeight.bold,
+            fontSize: 18,
+          ),
         ),
       ),
-      body: isLoading 
-        ? const Center(child: CircularProgressIndicator(color: Colors.blue))
-        : SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-            child: Column(
-              children: [
-                // KARTU PROFIL UTAMA
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [Colors.blue.shade800, Colors.blue.shade500],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.blue.withOpacity(0.3),
-                        blurRadius: 15,
-                        offset: const Offset(0, 8),
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator(color: Colors.blue))
+          : SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              child: Column(
+                children: [
+                  // KARTU PROFIL UTAMA
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [Colors.blue.shade800, Colors.blue.shade500],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
                       ),
-                    ],
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(3),
-                        decoration: const BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.blue.withOpacity(0.3),
+                          blurRadius: 15,
+                          offset: const Offset(0, 8),
                         ),
-                        child: CircleAvatar(
-                          radius: 30,
-                          backgroundColor: Colors.grey.shade200,
-                          child: fotoProfil != null && fotoProfil!.isNotEmpty
-                              ? ClipOval(
-                                  child: Image.network(
-                                    "http://127.0.0.1:8000$fotoProfil",
-                                    width: 60,
-                                    height: 60,
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (context, error, stackTrace) => Icon(Icons.person, size: 40, color: Colors.blue.shade700),
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(3),
+                          decoration: const BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                          ),
+                          child: CircleAvatar(
+                            radius: 30,
+                            backgroundColor: Colors.grey.shade200,
+                            child: fotoProfil != null && fotoProfil!.isNotEmpty
+                                ? ClipOval(
+                                    child: Image.network(
+                                      UrlHelper.getFullUrl(fotoProfil ?? ""),
+                                      cacheWidth: 300,
+                                      width: 60,
+                                      height: 60,
+                                      fit: BoxFit.cover,
+                                      errorBuilder:
+                                          (context, error, stackTrace) => Icon(
+                                            Icons.person,
+                                            size: 40,
+                                            color: Colors.blue.shade700,
+                                          ),
+                                    ),
+                                  )
+                                : Icon(
+                                    Icons.person,
+                                    size: 40,
+                                    color: Colors.blue.shade700,
                                   ),
-                                )
-                              : Icon(Icons.person, size: 40, color: Colors.blue.shade700),
+                          ),
+                        ),
+                        const SizedBox(width: 15),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                namaLengkap,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 18,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                emailUser,
+                                style: TextStyle(
+                                  color: Colors.white.withOpacity(0.9),
+                                  fontSize: 13,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                noHp,
+                                style: TextStyle(
+                                  color: Colors.white.withOpacity(0.9),
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 30),
+
+                  // DAFTAR MENU
+                  _menuTile(
+                    context,
+                    icon: Icons.person_outline,
+                    color: Colors.blue,
+                    title: "Profile Saya",
+                    subtitle: "Lihat detail informasi akun",
+                    page: ProfilePage(
+                      nama: namaLengkap,
+                      email: emailUser,
+                      hp: noHp,
+                      alamat: alamat,
+                      fotoProfil: fotoProfil,
+                    ),
+                  ),
+                  _menuTile(
+                    context,
+                    icon: Icons.lock_outline,
+                    color: Colors.orange,
+                    title: "Ubah Password",
+                    subtitle: "Ganti kata sandi demi keamanan",
+                    page: UbahPasswordPage(email: emailUser),
+                  ),
+                  _menuTile(
+                    context,
+                    icon: Icons.history,
+                    color: Colors.purple,
+                    title: "Riwayat Pengaduan",
+                    subtitle: "Pantau status laporan Anda",
+                    page: RiwayatPage(email: emailUser),
+                  ),
+                  _menuTile(
+                    context,
+                    icon: Icons.edit_outlined,
+                    color: Colors.green,
+                    title: "Edit Profil",
+                    subtitle: "Perbarui foto, nama, dan telepon",
+                    page: EditProfilPage(
+                      email: emailUser,
+                      namaLengkap: namaLengkap,
+                      noHp: noHp,
+                      fotoProfil: fotoProfil,
+                    ),
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  // TOMBOL LOGOUT
+                  SizedBox(
+                    width: double.infinity,
+                    height: 55,
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red.shade50,
+                        foregroundColor: Colors.red,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(15),
+                          side: BorderSide(
+                            color: Colors.red.shade200,
+                            width: 1.5,
+                          ),
                         ),
                       ),
-                      const SizedBox(width: 15),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              namaLengkap, 
-                              style: const TextStyle(
-                                color: Colors.white, 
-                                fontWeight: FontWeight.bold, 
-                                fontSize: 18
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              emailUser, 
-                              style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 13)
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              noHp, 
-                              style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 13)
-                            ),
-                          ],
+                      onPressed: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const LogoutPage(),
                         ),
-                      )
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 30),
-
-                // DAFTAR MENU
-                _menuTile(
-                  context,
-                  icon: Icons.person_outline,
-                  color: Colors.blue,
-                  title: "Profile Saya",
-                  subtitle: "Lihat detail informasi akun",
-                  page: ProfilePage(nama: namaLengkap, email: emailUser, hp: noHp, alamat: alamat, fotoProfil: fotoProfil),
-                ),
-                _menuTile(
-                  context,
-                  icon: Icons.lock_outline,
-                  color: Colors.orange,
-                  title: "Ubah Password",
-                  subtitle: "Ganti kata sandi demi keamanan",
-                  page: UbahPasswordPage(email: emailUser),
-                ),
-                _menuTile(
-                  context,
-                  icon: Icons.history,
-                  color: Colors.purple,
-                  title: "Riwayat Pengaduan",
-                  subtitle: "Pantau status laporan Anda",
-                  page: RiwayatPage(email: emailUser),
-                ),
-                _menuTile(
-                  context,
-                  icon: Icons.edit_outlined,
-                  color: Colors.green,
-                  title: "Edit Profil",
-                  subtitle: "Perbarui foto, nama, dan telepon",
-                  page: EditProfilPage(email: emailUser, namaLengkap: namaLengkap, noHp: noHp, fotoProfil: fotoProfil),
-                ),
-
-                const SizedBox(height: 20),
-
-                // TOMBOL LOGOUT
-                SizedBox(
-                  width: double.infinity,
-                  height: 55,
-                  child: ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red.shade50,
-                      foregroundColor: Colors.red,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(15),
-                        side: BorderSide(color: Colors.red.shade200, width: 1.5),
+                      ),
+                      icon: const Icon(Icons.logout_rounded),
+                      label: const Text(
+                        "Keluar dari Akun",
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
                       ),
                     ),
-                    onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const LogoutPage())),
-                    icon: const Icon(Icons.logout_rounded),
-                    label: const Text("Keluar dari Akun", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                   ),
-                ),
-                const SizedBox(height: 20),
-              ],
+                  const SizedBox(height: 20),
+                ],
+              ),
             ),
-          ),
     );
   }
 
-  Widget _menuTile(BuildContext context, {required IconData icon, required Color color, required String title, required String subtitle, required Widget page}) {
+  Widget _menuTile(
+    BuildContext context, {
+    required IconData icon,
+    required Color color,
+    required String title,
+    required String subtitle,
+    required Widget page,
+  }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 15),
       decoration: BoxDecoration(
-        color: Colors.white, 
+        color: Colors.white,
         borderRadius: BorderRadius.circular(15),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.03),
             blurRadius: 10,
             offset: const Offset(0, 4),
-          )
-        ]
+          ),
+        ],
       ),
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
@@ -233,12 +313,31 @@ class _AkunPageState extends State<AkunPage> {
           ),
           child: Icon(icon, color: color),
         ),
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-        subtitle: Text(subtitle, style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
-        trailing: const Icon(Icons.arrow_forward_ios, size: 14, color: Colors.grey),
-        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => page)).then((_) {
-          fetchProfileData(); // Auto-refresh data profil saat kembali dari halaman edit!
-        }),
+        title: Text(
+          title,
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+        ),
+        subtitle: Text(
+          subtitle,
+          style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+        ),
+        trailing: const Icon(
+          Icons.arrow_forward_ios,
+          size: 14,
+          color: Colors.grey,
+        ),
+        onTap: () async {
+          final result = await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => page,
+            ),
+          );
+
+          if(result == true){
+            fetchProfileData();
+          }
+        },
       ),
     );
   }
@@ -252,14 +351,28 @@ class ProfilePage extends StatelessWidget {
   final String alamat;
   final String? fotoProfil;
 
-  const ProfilePage({super.key, required this.nama, required this.email, required this.hp, required this.alamat, this.fotoProfil});
+  const ProfilePage({
+    super.key,
+    required this.nama,
+    required this.email,
+    required this.hp,
+    required this.alamat,
+    this.fotoProfil,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
-        title: const Text("Profil Saya", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
+        title: const Text(
+          "Profil Saya",
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: 18,
+          ),
+        ),
         backgroundColor: Colors.blue.shade700,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.white),
@@ -275,7 +388,9 @@ class ProfilePage extends StatelessWidget {
                   width: double.infinity,
                   height: 120,
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(colors: [Colors.blue.shade700, Colors.blue.shade50]),
+                    gradient: LinearGradient(
+                      colors: [Colors.blue.shade700, Colors.blue.shade50],
+                    ),
                     borderRadius: const BorderRadius.only(
                       bottomLeft: Radius.circular(30),
                       bottomRight: Radius.circular(30),
@@ -289,7 +404,11 @@ class ProfilePage extends StatelessWidget {
                       shape: BoxShape.circle,
                       border: Border.all(color: Colors.white, width: 5),
                       boxShadow: [
-                        BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, 5)),
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 10,
+                          offset: const Offset(0, 5),
+                        ),
                       ],
                     ),
                     child: CircleAvatar(
@@ -298,14 +417,24 @@ class ProfilePage extends StatelessWidget {
                       child: fotoProfil != null && fotoProfil!.isNotEmpty
                           ? ClipOval(
                               child: Image.network(
-                                "http://127.0.0.1:8000$fotoProfil",
+                                UrlHelper.getFullUrl(fotoProfil),
+                                cacheWidth: 300,
                                 width: 100,
                                 height: 100,
                                 fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) => const Icon(Icons.person, size: 60, color: Colors.blue),
+                                errorBuilder: (context, error, stackTrace) =>
+                                    const Icon(
+                                      Icons.person,
+                                      size: 60,
+                                      color: Colors.blue,
+                                    ),
                               ),
                             )
-                          : const Icon(Icons.person, size: 60, color: Colors.blue),
+                          : const Icon(
+                              Icons.person,
+                              size: 60,
+                              color: Colors.blue,
+                            ),
                     ),
                   ),
                 ),
@@ -313,12 +442,29 @@ class ProfilePage extends StatelessWidget {
             ),
             const SizedBox(height: 60),
 
-            Text(nama, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black87)),
+            Text(
+              nama,
+              style: const TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
+            ),
             const SizedBox(height: 5),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-              decoration: BoxDecoration(color: Colors.blue.shade50, borderRadius: BorderRadius.circular(20)),
-              child: Text("Warga Desa Maju Bersama", style: TextStyle(color: Colors.blue.shade700, fontSize: 12, fontWeight: FontWeight.w600)),
+              decoration: BoxDecoration(
+                color: Colors.blue.shade50,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                "Warga Desa Maju Bersama",
+                style: TextStyle(
+                  color: Colors.blue.shade700,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
 
             const SizedBox(height: 30),
@@ -329,19 +475,41 @@ class ProfilePage extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(20),
-                  boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 20, offset: const Offset(0, 4))],
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.04),
+                      blurRadius: 20,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
                 child: Padding(
                   padding: const EdgeInsets.all(20),
                   child: Column(
                     children: [
                       _buildInfoRow(Icons.badge_outlined, "Nama Lengkap", nama),
-                      const Divider(height: 25, thickness: 1, color: Color(0xFFF0F0F0)),
+                      const Divider(
+                        height: 25,
+                        thickness: 1,
+                        color: Color(0xFFF0F0F0),
+                      ),
                       _buildInfoRow(Icons.email_outlined, "Email", email),
-                      const Divider(height: 25, thickness: 1, color: Color(0xFFF0F0F0)),
+                      const Divider(
+                        height: 25,
+                        thickness: 1,
+                        color: Color(0xFFF0F0F0),
+                      ),
                       _buildInfoRow(Icons.phone_outlined, "Nomor Telepon", hp),
-                      const Divider(height: 25, thickness: 1, color: Color(0xFFF0F0F0)),
-                      _buildInfoRow(Icons.location_on_outlined, "Alamat", alamat),
+                      const Divider(
+                        height: 25,
+                        thickness: 1,
+                        color: Color(0xFFF0F0F0),
+                      ),
+                      _buildInfoRow(
+                        Icons.location_on_outlined,
+                        "Alamat",
+                        alamat,
+                      ),
                     ],
                   ),
                 ),
@@ -360,7 +528,10 @@ class ProfilePage extends StatelessWidget {
       children: [
         Container(
           padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(color: Colors.blue.shade50, shape: BoxShape.circle),
+          decoration: BoxDecoration(
+            color: Colors.blue.shade50,
+            shape: BoxShape.circle,
+          ),
           child: Icon(icon, color: Colors.blue.shade700, size: 20),
         ),
         const SizedBox(width: 15),
@@ -368,9 +539,23 @@ class ProfilePage extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(title, style: const TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.w500)),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
               const SizedBox(height: 4),
-              Text(value, style: const TextStyle(fontSize: 14, color: Colors.black87, fontWeight: FontWeight.w600)),
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: Colors.black87,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ],
           ),
         ),
@@ -386,7 +571,13 @@ class EditProfilPage extends StatefulWidget {
   final String noHp;
   final String? fotoProfil;
 
-  const EditProfilPage({super.key, required this.email, required this.namaLengkap, required this.noHp, this.fotoProfil});
+  const EditProfilPage({
+    super.key,
+    required this.email,
+    required this.namaLengkap,
+    required this.noHp,
+    this.fotoProfil,
+  });
 
   @override
   State<EditProfilPage> createState() => _EditProfilPageState();
@@ -396,19 +587,26 @@ class _EditProfilPageState extends State<EditProfilPage> {
   late TextEditingController namaController;
   late TextEditingController hpController;
   bool isLoading = false;
-  
+
   File? _imageFile; // Menyimpan foto yang dipilih dari galeri
   final ImagePicker _picker = ImagePicker();
 
   @override
   void initState() {
     super.initState();
-    namaController = TextEditingController(text: widget.namaLengkap == "Tanpa Nama" ? "" : widget.namaLengkap);
-    hpController = TextEditingController(text: widget.noHp == "Belum diatur" ? "" : widget.noHp);
+    namaController = TextEditingController(
+      text: widget.namaLengkap == "Tanpa Nama" ? "" : widget.namaLengkap,
+    );
+    hpController = TextEditingController(
+      text: widget.noHp == "Belum diatur" ? "" : widget.noHp,
+    );
   }
 
   Future<void> _pilihFoto() async {
-    final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
+    final pickedFile = await _picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 85,
+    );
     if (pickedFile != null) {
       setState(() {
         _imageFile = File(pickedFile.path);
@@ -419,8 +617,11 @@ class _EditProfilPageState extends State<EditProfilPage> {
   Future<void> simpanProfile() async {
     setState(() => isLoading = true);
     try {
-      var request = http.MultipartRequest('POST', Uri.parse('http://127.0.0.1:8000/api/profile/update'));
-      
+      var request = http.MultipartRequest(
+        'POST',
+        Uri.parse('http://10.0.2.2:8000/api/profile/update'),
+      );
+
       // Data Teks - Menggunakan parameter widget.email yang dikirim dari AkunPage secara sah
       request.fields['email'] = widget.email;
       request.fields['full_name'] = namaController.text;
@@ -428,7 +629,17 @@ class _EditProfilPageState extends State<EditProfilPage> {
 
       // Data Gambar (Jika user memilih gambar baru)
       if (_imageFile != null) {
-        request.files.add(await http.MultipartFile.fromPath('foto_profil', _imageFile!.path));
+        File uploadFile;
+
+        try {
+          uploadFile = await ImageHelper.compress(_imageFile!);
+        } catch (e) {
+          uploadFile = _imageFile!;
+        }
+
+        request.files.add(
+          await http.MultipartFile.fromPath('foto_profil', uploadFile.path),
+        );
       }
 
       var streamedResponse = await request.send();
@@ -436,17 +647,30 @@ class _EditProfilPageState extends State<EditProfilPage> {
 
       if (response.statusCode == 200) {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Profil Berhasil Diperbarui!"), backgroundColor: Colors.green));
-        Navigator.pop(context);
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Profil berhasil diubah!"),
+            backgroundColor: Colors.green,
+          ),
+        );
+
+        Navigator.pop(context, true);
       } else {
         if (!mounted) return;
         // Membaca detail teks error jika disediakan oleh modifikasi Laravel catch kita kemarin
         final errData = jsonDecode(response.body);
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Gagal: ${errData['detail'] ?? response.statusCode}")));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Gagal: ${errData['detail'] ?? response.statusCode}"),
+          ),
+        );
       }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Error: $e")));
     } finally {
       if (mounted) setState(() => isLoading = false);
     }
@@ -457,7 +681,14 @@ class _EditProfilPageState extends State<EditProfilPage> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text("Edit Profil", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 18)),
+        title: const Text(
+          "Edit Profil",
+          style: TextStyle(
+            color: Colors.black,
+            fontWeight: FontWeight.bold,
+            fontSize: 18,
+          ),
+        ),
         backgroundColor: Colors.white,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.black),
@@ -474,29 +705,64 @@ class _EditProfilPageState extends State<EditProfilPage> {
                     radius: 50,
                     backgroundColor: const Color(0xFFF0F0F0),
                     child: _imageFile != null
-                        ? ClipOval(child: Image.file(_imageFile!, width: 100, height: 100, fit: BoxFit.cover))
-                        : widget.fotoProfil != null && widget.fotoProfil!.isNotEmpty
-                            ? ClipOval(child: Image.network("http://127.0.0.1:8000${widget.fotoProfil}", width: 100, height: 100, fit: BoxFit.cover))
-                            : const Icon(Icons.person, size: 50, color: Colors.blue),
+                        ? ClipOval(
+                            child: Image.file(
+                              _imageFile!,
+                              width: 100,
+                              height: 100,
+                              fit: BoxFit.cover,
+                            ),
+                          )
+                        : widget.fotoProfil != null &&
+                              widget.fotoProfil!.isNotEmpty
+                        ? ClipOval(
+                            child: Image.network(
+                              UrlHelper.getFullUrl(widget.fotoProfil!),
+                              cacheWidth: 300,
+                              width: 100,
+                              height: 100,
+                              fit: BoxFit.cover,
+                            ),
+                          )
+                        : const Icon(
+                            Icons.person,
+                            size: 50,
+                            color: Colors.blue,
+                          ),
                   ),
                   Positioned(
                     bottom: 0,
                     right: 0,
                     child: Container(
                       padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(color: Colors.blue.shade700, shape: BoxShape.circle, border: Border.all(color: Colors.white, width: 2)),
-                      child: const Icon(Icons.camera_alt, color: Colors.white, size: 20),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.shade700,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 2),
+                      ),
+                      child: const Icon(
+                        Icons.camera_alt,
+                        color: Colors.white,
+                        size: 20,
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
             const SizedBox(height: 10),
-            const Text("Ketuk untuk mengubah foto", style: TextStyle(color: Colors.grey, fontSize: 12)),
+            const Text(
+              "Ketuk untuk mengubah foto",
+              style: TextStyle(color: Colors.grey, fontSize: 12),
+            ),
             const SizedBox(height: 30),
 
             _field("Nama Lengkap", Icons.person_outline, namaController),
-            _fieldDisabled("Email (Tidak bisa diubah)", Icons.email_outlined, widget.email),
+            _fieldDisabled(
+              "Email (Tidak bisa diubah)",
+              Icons.email_outlined,
+              widget.email,
+            ),
             _field("Nomor Telepon", Icons.phone_outlined, hpController),
             const SizedBox(height: 30),
             SizedBox(
@@ -505,12 +771,21 @@ class _EditProfilPageState extends State<EditProfilPage> {
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blue.shade700,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(15),
+                  ),
                 ),
                 onPressed: isLoading ? null : simpanProfile,
-                child: isLoading 
-                  ? const CircularProgressIndicator(color: Colors.white) 
-                  : const Text("Simpan Perubahan", style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                child: isLoading
+                    ? const CircularProgressIndicator(color: Colors.white)
+                    : const Text(
+                        "Simpan Perubahan",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
               ),
             ),
           ],
@@ -529,7 +804,10 @@ class _EditProfilPageState extends State<EditProfilPage> {
           prefixIcon: Icon(icon, color: Colors.grey),
           filled: true,
           fillColor: const Color(0xFFF8F9FA),
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(15),
+            borderSide: BorderSide.none,
+          ),
         ),
       ),
     );
@@ -546,7 +824,10 @@ class _EditProfilPageState extends State<EditProfilPage> {
           prefixIcon: Icon(icon, color: Colors.grey),
           filled: true,
           fillColor: const Color(0xFFEEEEEE),
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(15),
+            borderSide: BorderSide.none,
+          ),
         ),
       ),
     );
@@ -571,29 +852,51 @@ class _UbahPasswordPageState extends State<UbahPasswordPage> {
 
   Future<void> simpanPassword() async {
     if (newPassController.text != confirmPassController.text) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Konfirmasi password baru tidak cocok!")));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Konfirmasi password baru tidak cocok!")),
+      );
       return;
     }
 
     setState(() => isLoading = true);
     try {
       final response = await http.post(
-        Uri.parse('http://127.0.0.1:8000/api/profile/change-password'),
-        headers: {"Content-Type": "application/json", "Accept": "application/json"},
-        body: jsonEncode({"email": widget.email, "old_password": oldPassController.text, "new_password": newPassController.text}),
+        Uri.parse('http://10.0.2.2:8000/api/profile/change-password'),
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+        },
+        body: jsonEncode({
+          "email": widget.email,
+          "old_password": oldPassController.text,
+          "new_password": newPassController.text,
+        }),
       );
       final data = jsonDecode(response.body);
       if (response.statusCode == 200) {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Password Berhasil Diubah!"), backgroundColor: Colors.green));
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Password Berhasil Diperbarui!"),
+            backgroundColor: Colors.green,
+          ),
+        );
+
+        await Future.delayed(const Duration(milliseconds: 500));
+
         Navigator.pop(context);
       } else {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Gagal: ${data['detail']}")));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Gagal: ${data['detail']}")));
       }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Error: $e")));
     } finally {
       if (mounted) setState(() => isLoading = false);
     }
@@ -604,7 +907,14 @@ class _UbahPasswordPageState extends State<UbahPasswordPage> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text("Ubah Password", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 18)),
+        title: const Text(
+          "Ubah Password",
+          style: TextStyle(
+            color: Colors.black,
+            fontWeight: FontWeight.bold,
+            fontSize: 18,
+          ),
+        ),
         backgroundColor: Colors.white,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.black),
@@ -613,7 +923,11 @@ class _UbahPasswordPageState extends State<UbahPasswordPage> {
         padding: const EdgeInsets.all(25),
         child: Column(
           children: [
-            const CircleAvatar(radius: 45, backgroundColor: Color(0xFFFFF4E5), child: Icon(Icons.lock_outline, size: 40, color: Colors.orange)),
+            const CircleAvatar(
+              radius: 45,
+              backgroundColor: Color(0xFFFFF4E5),
+              child: Icon(Icons.lock_outline, size: 40, color: Colors.orange),
+            ),
             const SizedBox(height: 30),
             _password("Password Lama", oldPassController),
             _password("Password Baru", newPassController),
@@ -625,12 +939,21 @@ class _UbahPasswordPageState extends State<UbahPasswordPage> {
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.orange,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(15),
+                  ),
                 ),
                 onPressed: isLoading ? null : simpanPassword,
-                child: isLoading 
-                  ? const CircularProgressIndicator(color: Colors.white) 
-                  : const Text("Simpan Password", style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                child: isLoading
+                    ? const CircularProgressIndicator(color: Colors.white)
+                    : const Text(
+                        "Simpan Password",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
               ),
             ),
           ],
@@ -649,12 +972,18 @@ class _UbahPasswordPageState extends State<UbahPasswordPage> {
           labelText: hint,
           prefixIcon: const Icon(Icons.key_outlined, color: Colors.grey),
           suffixIcon: IconButton(
-            icon: Icon(isHidden ? Icons.visibility_off : Icons.visibility, color: Colors.grey),
+            icon: Icon(
+              isHidden ? Icons.visibility_off : Icons.visibility,
+              color: Colors.grey,
+            ),
             onPressed: () => setState(() => isHidden = !isHidden),
           ),
           filled: true,
           fillColor: const Color(0xFFF8F9FA),
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(15),
+            borderSide: BorderSide.none,
+          ),
         ),
       ),
     );
@@ -682,17 +1011,24 @@ class _RiwayatPageState extends State<RiwayatPage> {
 
   Future<void> fetchRiwayat() async {
     try {
-      final response = await http.get(Uri.parse("http://127.0.0.1:8000/api/pengaduan/riwayat/${widget.email}"));
+      final response = await http.get(
+        Uri.parse("http://10.0.2.2:8000/api/pengaduan/riwayat/${widget.email}"),
+      );
       if (response.statusCode == 200) {
         final data = json.decode(response.body)['data'];
+
+        if (!mounted) return;
+
         setState(() {
           riwayat = data;
           isLoading = false;
         });
       } else {
+        if (!mounted) return;
         setState(() => isLoading = false);
       }
     } catch (e) {
+      if (!mounted) return;
       setState(() => isLoading = false);
     }
   }
@@ -702,21 +1038,35 @@ class _RiwayatPageState extends State<RiwayatPage> {
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
-        title: const Text("Riwayat Pengaduan", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 18)),
+        title: const Text(
+          "Riwayat Pengaduan",
+          style: TextStyle(
+            color: Colors.black,
+            fontWeight: FontWeight.bold,
+            fontSize: 18,
+          ),
+        ),
         backgroundColor: Colors.white,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.black),
       ),
-      body: isLoading 
-        ? const Center(child: CircularProgressIndicator(color: Colors.blue))
-        : riwayat.isEmpty 
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator(color: Colors.blue))
+          : riwayat.isEmpty
           ? Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.inbox_outlined, size: 80, color: Colors.grey.shade300),
+                  Icon(
+                    Icons.inbox_outlined,
+                    size: 80,
+                    color: Colors.grey.shade300,
+                  ),
                   const SizedBox(height: 10),
-                  Text("Belum ada laporan", style: TextStyle(color: Colors.grey.shade500, fontSize: 16)),
+                  Text(
+                    "Belum ada laporan",
+                    style: TextStyle(color: Colors.grey.shade500, fontSize: 16),
+                  ),
                 ],
               ),
             )
@@ -725,7 +1075,7 @@ class _RiwayatPageState extends State<RiwayatPage> {
               itemCount: riwayat.length,
               itemBuilder: (context, index) {
                 final item = riwayat[index];
-                
+
                 Color statusColor = Colors.grey;
                 if (item['status'] == 'Menunggu') statusColor = Colors.orange;
                 if (item['status'] == 'Diproses') statusColor = Colors.blue;
@@ -736,29 +1086,69 @@ class _RiwayatPageState extends State<RiwayatPage> {
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(15),
-                    boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4))],
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.03),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
                   ),
                   child: ListTile(
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 15,
+                      vertical: 8,
+                    ),
                     leading: Container(
                       padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(color: Colors.blue.shade50, borderRadius: BorderRadius.circular(10)),
-                      child: Icon(Icons.assignment_outlined, color: Colors.blue.shade700),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.shade50,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(
+                        Icons.assignment_outlined,
+                        color: Colors.blue.shade700,
+                      ),
                     ),
-                    title: Text(item['judul'] ?? "Tanpa Judul", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                    title: Text(
+                      item['judul'] ?? "Tanpa Judul",
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                      ),
+                    ),
                     subtitle: Padding(
                       padding: const EdgeInsets.only(top: 8),
                       child: Row(
                         children: [
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(color: statusColor.withOpacity(0.1), borderRadius: BorderRadius.circular(6)),
-                            child: Text(item['status'], style: TextStyle(color: statusColor, fontSize: 10, fontWeight: FontWeight.bold)),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: statusColor.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              item['status'],
+                              style: TextStyle(
+                                color: statusColor,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                           ),
                         ],
                       ),
                     ),
-                    trailing: Text("#${item['id_pengaduan']}", style: TextStyle(color: Colors.grey.shade400, fontSize: 12)),
+                    trailing: Text(
+                      "#${item['id_pengaduan']}",
+                      style: TextStyle(
+                        color: Colors.grey.shade400,
+                        fontSize: 12,
+                      ),
+                    ),
                   ),
                 );
               },
@@ -783,16 +1173,34 @@ class LogoutPage extends StatelessWidget {
             children: [
               Container(
                 padding: const EdgeInsets.all(25),
-                decoration: BoxDecoration(color: Colors.red.shade50, shape: BoxShape.circle),
-                child: Icon(Icons.logout_rounded, color: Colors.red.shade400, size: 80),
+                decoration: BoxDecoration(
+                  color: Colors.red.shade50,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.logout_rounded,
+                  color: Colors.red.shade400,
+                  size: 80,
+                ),
               ),
               const SizedBox(height: 30),
-              const Text("Yakin ingin keluar?", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black87)),
+              const Text(
+                "Yakin ingin keluar?",
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
               const SizedBox(height: 10),
               Text(
                 "Sesi Anda akan berakhir dan Anda harus masuk kembali untuk membuat laporan.",
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.grey.shade600, fontSize: 14, height: 1.5),
+                style: TextStyle(
+                  color: Colors.grey.shade600,
+                  fontSize: 14,
+                  height: 1.5,
+                ),
               ),
               const SizedBox(height: 50),
               SizedBox(
@@ -801,17 +1209,28 @@ class LogoutPage extends StatelessWidget {
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.red.shade600,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(15),
+                    ),
                     elevation: 0,
                   ),
                   onPressed: () {
                     Navigator.pushAndRemoveUntil(
                       context,
-                      MaterialPageRoute(builder: (context) => const LandingPage()),
+                      MaterialPageRoute(
+                        builder: (context) => const LandingPage(),
+                      ),
                       (route) => false,
                     );
                   },
-                  child: const Text("Ya, Keluar Akun", style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                  child: const Text(
+                    "Ya, Keluar Akun",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(height: 15),
@@ -819,9 +1238,20 @@ class LogoutPage extends StatelessWidget {
                 width: double.infinity,
                 height: 55,
                 child: TextButton(
-                  style: TextButton.styleFrom(shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15))),
+                  style: TextButton.styleFrom(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                  ),
                   onPressed: () => Navigator.pop(context),
-                  child: Text("Batal", style: TextStyle(color: Colors.grey.shade700, fontSize: 16, fontWeight: FontWeight.bold)),
+                  child: Text(
+                    "Batal",
+                    style: TextStyle(
+                      color: Colors.grey.shade700,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
               ),
             ],

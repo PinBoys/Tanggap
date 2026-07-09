@@ -4,7 +4,12 @@ import 'dart:convert';
 import 'detail_pengaduan.dart';
 
 class PengaduanPage extends StatefulWidget {
-  const PengaduanPage({super.key});
+  final String emailUser;
+
+  const PengaduanPage({
+    super.key,
+    required this.emailUser,
+  });
 
   @override
   State<PengaduanPage> createState() => _PengaduanPageState();
@@ -22,9 +27,6 @@ class _PengaduanPageState extends State<PengaduanPage> {
   ];
 
   List<Map<String, dynamic>> pengaduan = [];
-
-  // GANTI IP INI SESUAIKAN DENGAN EMULATOR (10.0.2.2) ATAU HP FISIK/WIFI
-  final String apiUrl = "http://127.0.0.1:8000/api/pengaduan/status";
 
   Color getStatusColor(String status) {
 
@@ -59,6 +61,9 @@ class _PengaduanPageState extends State<PengaduanPage> {
   }
 
   Future<void> fetchDataPengaduan() async {
+
+  final String apiUrl = "http://10.0.2.2:8000/api/pengaduan/status/${widget.emailUser}";
+  
     try {
       final response = await http.get(Uri.parse(apiUrl));
 
@@ -67,7 +72,7 @@ class _PengaduanPageState extends State<PengaduanPage> {
         
         setState(() {
           pengaduan = data.map((item) => {
-            "id_pengaduan": item['id_pengaduan'], // Simpan ID asli
+            "id_pengaduan": item['id_pengaduan'],
             "kode": "#PGD-${item['id_pengaduan']}", 
             "judul": item['judul'] ?? "Tanpa Judul",
             "tanggal": item['tanggal_pengaduan'] ?? "-",
@@ -123,41 +128,48 @@ class _PengaduanPageState extends State<PengaduanPage> {
         padding: const EdgeInsets.all(14),
         child: Column(
           children: [
-            // TAB
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: List.generate(
-                tabs.length,
-                (index) {
-                  bool active = selectedIndex == index;
-                  return GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        selectedIndex = index;
-                      });
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 7,
-                      ),
-                      decoration: BoxDecoration(
-                        color: active
-                            ? Colors.blue
-                            : Colors.grey.shade200,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        tabs[index],
-                        style: TextStyle(
-                          color: active ? Colors.white : Colors.black,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: List.generate(
+                  tabs.length,
+                  (index) {
+                    bool active = selectedIndex == index;
+
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 5),
+                      child: GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            selectedIndex = index;
+                          });
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 18,
+                            vertical: 10,
+                          ),
+                          decoration: BoxDecoration(
+                            color: active
+                                ? Colors.blue
+                                : Colors.grey.shade200,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text(
+                            tabs[index],
+                            style: TextStyle(
+                              color: active
+                                  ? Colors.white
+                                  : Colors.black,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                         ),
                       ),
-                    ),
-                  );
-                },
+                    );
+                  },
+                ),
               ),
             ),
             const SizedBox(height: 18),

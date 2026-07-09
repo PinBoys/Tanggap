@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dashboard_admin.dart';
+import 'lupa_pw_admin.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
@@ -17,7 +18,7 @@ class _LoginAdminPageState extends State<LoginAdminPage> {
   bool isLoading = false;
   bool isPasswordHidden = true;
 
-  final String apiUrl = "http://127.0.0.1:8000/api/admin/login";
+  final String apiUrl = "http://10.0.2.2:8000/api/admin/login";
 
   Future<void> loginAdmin() async {
     if (emailCtrl.text.isEmpty || passwordCtrl.text.isEmpty) {
@@ -37,10 +38,10 @@ class _LoginAdminPageState extends State<LoginAdminPage> {
       final response = await http.post(
         Uri.parse(apiUrl),
 
-        headers: {"Content-Type": "application/json"},
+        headers: {"Content-Type": "application/json", "Accept": "application/json",},
 
         body: jsonEncode({
-          "email": emailCtrl.text,
+          "email": emailCtrl.text.trim(),
           "password": passwordCtrl.text,
         }),
       );
@@ -183,18 +184,23 @@ class _LoginAdminPageState extends State<LoginAdminPage> {
                   ),
                 ),
 
-                Align(
-                  alignment: Alignment.centerRight,
-
-                  child: TextButton(
-                    onPressed: () {},
-
-                    child: const Text(
-                      "Lupa Password?",
-                      style: TextStyle(color: Colors.blue),
-                    ),
+               Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const LupaPasswordPage(),
+                      ),
+                    );
+                  },
+                  child: const Text(
+                    "Lupa Password?",
+                    style: TextStyle(color: Colors.blue),
                   ),
                 ),
+              ),
 
                 const SizedBox(height: 20),
 

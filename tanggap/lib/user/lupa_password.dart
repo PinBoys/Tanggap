@@ -30,7 +30,7 @@ class _LupaPasswordPageState extends State<LupaPasswordPage> {
     });
 
     // Sesuaikan URL ke Laravel di Android Emulator
-    String apiUrl = 'http://127.0.0.1:8000/api/check-email';
+    String apiUrl = 'http://10.0.2.2:8000/api/check-email';
     
     try {
       final response = await http.post(

@@ -1,65 +1,57 @@
 <?php
 
-use App\Http\Controllers\Api\AuthController;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Api\PengaduanController;
-use App\Http\Controllers\Api\AdminAuthController;
+
+// AUTH
+use App\Http\Controllers\Api\Auth\AuthController;
+use App\Http\Controllers\Api\Auth\AdminAuthController;
+// USER
+use App\Http\Controllers\Api\User\DashboardController;
+use App\Http\Controllers\Api\User\PengaduanController;
+use App\Http\Controllers\Api\User\ProfileController;
+use App\Http\Controllers\Api\User\RiwayatController;
+use App\Http\Controllers\Api\User\StatusController;
+use App\Http\Controllers\Api\User\NotifikasiController;
+// ADMIN
+use App\Http\Controllers\Api\Admin\AdminDashboardController;
 use App\Http\Controllers\Api\Admin\AdminProfileController;
-use App\Http\Controllers\Api\Admin\NotifikasiController;
-use App\Http\Controllers\Api\Admin\DashboardController;
+use App\Http\Controllers\Api\Admin\NotificationController;
+use App\Http\Controllers\Api\Admin\ComplaintActionController;
 
-//login Admin
-Route::post('/admin/login', [AdminAuthController::class, 'login']);
-
-// Jalur yang akan dipanggil oleh Flutter
+// ================= AUTH USER =================
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
-
-// Tambahkan baris ini untuk Lupa Password:
 Route::post('/check-email', [AuthController::class, 'checkEmail']);
-// Tambahkan baris ini untuk menyimpan password baru:
 Route::post('/update-password', [AuthController::class, 'updatePassword']);
-
-// Endpoint untuk Homepage
-Route::get('/pengaduan/terbaru', [PengaduanController::class, 'pengaduanTerbaru']);
-
-// Endpoint untuk Halaman Cek Status (Bisa menerima parameter misal: /pengaduan/status?status=Diproses)
-Route::get('/pengaduan/status', [PengaduanController::class, 'cekStatus']);
-
-// Tambahkan di bawah route yang sudah ada
-Route::post('/pengaduan', [PengaduanController::class, 'store']);
-
-// Route untuk halaman Cek Status Pengaduan (Semua riwayat)
-Route::get('/pengaduan/status', [App\Http\Controllers\Api\PengaduanController::class, 'status']);
-
-Route::post('/profile/update', [App\Http\Controllers\Api\ProfileController::class, 'updateProfile']);
-
-// Route untuk mengambil data profil berdasarkan email
-Route::get('/profile/{email}', [App\Http\Controllers\Api\AuthController::class, 'getProfile']);
-
-// --- JALUR UNTUK HALAMAN AKUN ---
-Route::post('/profile/update', [App\Http\Controllers\Api\AuthController::class, 'updateProfile']);
-Route::post('/profile/change-password', [App\Http\Controllers\Api\AuthController::class, 'changePassword']);
-Route::get('/pengaduan/riwayat/{email}', [App\Http\Controllers\Api\PengaduanController::class, 'riwayatUser']);
-
-// Route untuk membuat pengaduan baru
-Route::post('/pengaduan', [App\Http\Controllers\Api\PengaduanController::class, 'store']);
-
-// Route untuk mengambil detail 1 pengaduan berdasarkan ID
-Route::get('/pengaduan/detail/{id}', [App\Http\Controllers\Api\PengaduanController::class, 'detail']);
-
-//Route pengaduan dashboard admin
-Route::get('/admin/complaints', [DashboardController::class, 'getComplaints']);
-
-//Route ubah status pengaduan
-Route::put('/admin/pengaduan/{id}/status', [PengaduanController::class, 'updateStatus']);
-
-//Route  notifikasi admin
-Route::get('/admin/notifikasi',[NotifikasiController::class, 'index']);
-
-//Route pengaturan akun admin
-Route::get('/admin/profile', [AdminProfileController::class, 'getProfile']);
-Route::post('/admin/profile/update', [AdminProfileController::class, 'updateProfile']);
-
-//ubah pw admin
-Route::post('/admin/change-password', [AdminProfileController::class, 'changePassword']);
+// ================= AUTH ADMIN =================
+Route::post('/admin/login', [AdminAuthController::class, 'login']);
+// ================= PROFILE USER =================
+Route::get('/profile/{email}', [ProfileController::class, 'getProfile']);
+Route::post('/profile/update', [ProfileController::class, 'updateProfile']);
+Route::post('/profile/change-password', [ProfileController::class, 'changePassword']);
+// ================= DASHBOARD USER =================
+Route::get('/pengaduan/terbaru', [DashboardController::class, 'pengaduanTerbaru']);
+// ================= PENGADUAN USER =================
+Route::post('/pengaduan', [PengaduanController::class,'store']);
+Route::get('/pengaduan/detail/{id}', [PengaduanController::class,'detail']);
+// ================= STATUS USER =================
+Route::get('/pengaduan/status/{email}', [StatusController::class,'statusUser']);
+// ================= RIWAYAT USER =================
+Route::get('/pengaduan/riwayat/{email}', [RiwayatController::class,'riwayatUser']);
+// ================= NOTIFIKASI USER =================
+Route::get('/notifikasi/{email}', [NotifikasiController::class,'index']);
+// ================= DASHBOARD ADMIN =================
+Route::get('/admin/complaints', [AdminDashboardController::class,'getComplaints']);
+// ================= AKSI ADMIN =================
+// DIPERBAIKI: Mengubah Route::put menjadi Route::post agar support MultipartRequest (Foto)
+Route::post('/admin/pengaduan/{id}/status', [ComplaintActionController::class,'updateStatus']);
+// ================= NOTIFIKASI ADMIN =================
+Route::get('/admin/notifikasi', [NotificationController::class,'index']);
+// ================= PROFILE ADMIN =================
+Route::get('/admin/profile', [AdminProfileController::class,'getProfile']);
+Route::post('/admin/profile/update', [AdminProfileController::class,'updateProfile']);
+Route::post('/admin/change-password', [AdminProfileController::class,'changePassword']);
+// Endpoint untuk menyimpan Tindak Lanjut
+Route::post('/admin/pengaduan/{id}/tindak-lanjut', [ComplaintActionController::class, 'storeTindakLanjut']);
+// Endpoint untuk menyimpan Rating & Komentar dari Warga
+Route::post('/pengaduan/{id}/review', [PengaduanController::class, 'storeReview']);

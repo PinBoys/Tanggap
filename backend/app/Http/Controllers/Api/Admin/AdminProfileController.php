@@ -5,9 +5,13 @@ namespace App\Http\Controllers\Api\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 
 class AdminProfileController extends Controller
 {
+    /**
+     * Ambil Profil Admin
+     */
     public function getProfile()
     {
         $admin = DB::table('accounts')
@@ -32,12 +36,22 @@ class AdminProfileController extends Controller
             )
 
             ->select(
+                'accounts.id as account_id',
+                'users.id as user_id',
                 'accounts.email',
                 'users.full_name',
-                'users.phone'
+                'users.phone',
+                'users.foto_profil'
             )
 
             ->first();
+
+        if (!$admin) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Admin tidak ditemukan'
+            ], 404);
+        }
 
         return response()->json([
             'status' => 'success',
@@ -45,10 +59,17 @@ class AdminProfileController extends Controller
         ]);
     }
 
-    public function updateProfile(
-        Request $request
-    )
+    /**
+     * Update Profil Admin
+     */
+    public function updateProfile(Request $request)
     {
+        $request->validate([
+            'email' => 'required|email',
+            'full_name' => 'required|string|max:255',
+            'phone' => 'nullable|string|max:20',
+        ]);
+
         $admin = DB::table('accounts')
 
             ->join(
@@ -77,93 +98,142 @@ class AdminProfileController extends Controller
 
             ->first();
 
-        DB::table('accounts')
-            ->where(
-                'id',
-                $admin->account_id
-            )
-            ->update([
-                'email' =>
-                    $request->email
-            ]);
+        if (!$admin) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Admin tidak ditemukan'
+            ], 404);
+        }
 
-        DB::table('users')
-            ->where(
-                'id',
-                $admin->user_id
-            )
-            ->update([
-                'full_name' =>
-                    $request->full_name,
+        DB::transaction(function () use ($request, $admin) {
 
-                'phone' =>
-                    $request->phone
-            ]);
+            DB::table('accounts')
+                ->where(
+                    'id',
+                    $admin->account_id
+                )
+                ->update([
+                    'email' => $request->email
+                ]);
+
+            $updateUser = [
+
+                'full_name' => $request->full_name,
+
+                'phone' => $request->phone
+
+            ];
+
+            // Jika nanti ingin upload foto admin
+            if ($request->hasFile('foto_profil')) {
+
+                $path = $request
+                    ->file('foto_profil')
+                    ->store(
+                        'profile_images',
+                        'public'
+                    );
+
+                $updateUser['foto_profil'] =
+                    '/storage/' . $path;
+            }
+
+            DB::table('users')
+                ->where(
+                    'id',
+                    $admin->user_id
+                )
+                ->update($updateUser);
+
+        });
 
         return response()->json([
             'status' => 'success',
-            'message' =>
-                'Profil berhasil diperbarui'
+            'message' => 'Profil berhasil diperbarui'
         ]);
     }
 
-    
-public function changePassword(Request $request)
-{
-    $request->validate([
-        'old_password' => 'required',
-        'new_password' => 'required'
-    ]);
+    /**
+     * Ganti Password Admin
+     */
+    public function changePassword(Request $request)
+    {
+        $request->validate([
+            'old_password' => 'required',
+            'new_password' => 'required|min:6'
+        ]);
 
-    $admin = DB::table('accounts')
+        $admin = DB::table('accounts')
 
-        ->join(
-            'users',
-            'accounts.id',
-            '=',
-            'users.account_id'
-        )
+            ->join(
+                'users',
+                'accounts.id',
+                '=',
+                'users.account_id'
+            )
 
-        ->join(
-            'roles',
-            'users.role_id',
-            '=',
-            'roles.id'
-        )
+            ->join(
+                'roles',
+                'users.role_id',
+                '=',
+                'roles.id'
+            )
 
-        ->where(
-            'roles.slug',
-            'admin'
-        )
+            ->where(
+                'roles.slug',
+                'admin'
+            )
 
-        ->select('accounts.*')
+            ->select('accounts.*')
 
-        ->first();
+            ->first();
 
-    if (
-        $admin->password_hash !=
-        $request->old_password
-    ) {
+        if (!$admin) {
+
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Admin tidak ditemukan'
+            ], 404);
+
+        }
+
+        if (
+            !Hash::check(
+                $request->old_password,
+                $admin->password_hash
+            )
+        ) {
+
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Password lama salah'
+            ], 400);
+
+        }
+
+        DB::table('accounts')
+
+            ->where(
+                'id',
+                $admin->id
+            )
+
+            ->update([
+
+                'password_hash' =>
+                    Hash::make(
+                        $request->new_password
+                    )
+
+            ]);
 
         return response()->json([
-            'status' => 'error',
-            'message' => 'Password lama salah'
-        ], 400);
-    }
 
-    DB::table('accounts')
-        ->where(
-            'id',
-            $admin->id
-        )
-        ->update([
-            'password_hash' =>
-                $request->new_password
+            'status' => 'success',
+
+            'message' =>
+                'Password berhasil diubah'
+
         ]);
-
-    return response()->json([
-        'status' => 'success',
-        'message' => 'Password berhasil diubah'
-    ]);
-}
+    }
 }

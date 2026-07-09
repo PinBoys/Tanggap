@@ -2,17 +2,16 @@ import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
+import 'detail_pengaduan_admin.dart';
+
 class NotifikasiAdminPage extends StatefulWidget {
   const NotifikasiAdminPage({super.key});
 
   @override
-  State<NotifikasiAdminPage> createState() =>
-      _NotifikasiAdminPageState();
+  State<NotifikasiAdminPage> createState() => _NotifikasiAdminPageState();
 }
 
-class _NotifikasiAdminPageState
-    extends State<NotifikasiAdminPage> {
-
+class _NotifikasiAdminPageState extends State<NotifikasiAdminPage> {
   List notifikasi = [];
   bool isLoading = true;
 
@@ -25,9 +24,7 @@ class _NotifikasiAdminPageState
   Future<void> getNotifikasi() async {
     try {
       final response = await http.get(
-        Uri.parse(
-          "http://127.0.0.1:8000/api/admin/notifikasi",
-        ),
+        Uri.parse("http://10.0.2.2:8000/api/admin/notifikasi"),
       );
 
       final data = jsonDecode(response.body);
@@ -47,26 +44,23 @@ class _NotifikasiAdminPageState
     }
   }
 
-    String statusIndonesia(String status) {
-  switch (status.toUpperCase()) {
-    case "PENDING":
-      return "Menunggu";
+  String statusIndonesia(String status) {
+    switch (status.toUpperCase()) {
+      case "PENDING":
+        return "Menunggu";
 
-    case "DIPROSES":
-      return "Diproses";
+      case "DIPROSES":
+        return "Diproses";
 
-    case "SELESAI":
-      return "Selesai";
+      case "SELESAI":
+        return "Selesai";
 
-    default:
-      return status;
+      default:
+        return status;
+    }
   }
-}
 
-String pesanNotifikasi(
-    String judul,
-    String status,
-  ) {
+  String pesanNotifikasi(String judul, String status) {
     switch (status.toUpperCase()) {
       case "PENDING":
         return "Pengaduan $judul sedang menunggu tindak lanjut";
@@ -82,27 +76,56 @@ String pesanNotifikasi(
     }
   }
 
-  Color getStatusColor(String status) {
-    status = status.toUpperCase();
+  Color getUrgencyColor(String urgensi) {
+    urgensi = urgensi.toUpperCase();
 
-    if (status == "PENDING") {
-      return Colors.orange;
+    switch (urgensi) {
+      case "SANGAT TINGGI":
+        return Colors.red;
+
+      case "TINGGI":
+        return Colors.red.shade700;
+
+      case "SEDANG":
+        return Colors.orange;
+
+      case "RENDAH":
+        return Colors.amber;
+
+      case "SANGAT RENDAH":
+        return Colors.green;
+
+      default:
+        return Colors.grey;
     }
+  }
 
-    if (status == "DIPROSES") {
-      return Colors.blue;
+  IconData getUrgencyIcon(String urgensi) {
+    urgensi = urgensi.toUpperCase();
+
+    switch (urgensi) {
+      case "SANGAT TINGGI":
+        return Icons.warning_rounded;
+
+      case "TINGGI":
+        return Icons.priority_high;
+
+      case "SEDANG":
+        return Icons.notifications_active;
+
+      case "RENDAH":
+        return Icons.info_outline;
+
+      case "SANGAT RENDAH":
+        return Icons.check_circle;
+
+      default:
+        return Icons.notifications;
     }
-
-    if (status == "SELESAI") {
-      return Colors.green;
-    }
-
-    return Colors.grey;
   }
 
   @override
   Widget build(BuildContext context) {
-
     return Scaffold(
       backgroundColor: Colors.white,
 
@@ -110,62 +133,63 @@ String pesanNotifikasi(
         backgroundColor: Colors.white,
         elevation: 0,
 
-        iconTheme: const IconThemeData(
-          color: Colors.black,
-        ),
+        iconTheme: const IconThemeData(color: Colors.black),
 
         centerTitle: true,
 
         title: const Text(
           "Notifikasi",
-          style: TextStyle(
-            color: Colors.black,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
         ),
       ),
 
       body: isLoading
-          ? const Center(
-              child: CircularProgressIndicator(),
-            )
+          ? const Center(child: CircularProgressIndicator())
           : ListView.builder(
               padding: const EdgeInsets.all(20),
 
               itemCount: notifikasi.length,
 
               itemBuilder: (context, index) {
-
                 final item = notifikasi[index];
 
-                return notifItem(
-                  icon:
-                      item["status"] == "PENDING"
-                          ? Icons.schedule
-                          : item["status"] == "DIPROSES"
-                              ? Icons.build
-                              : Icons.check_circle,
+                return InkWell(
+                  borderRadius: BorderRadius.circular(12),
 
-                  iconColor:
-                      item["status"] == "SELESAI"
-                          ? Colors.white
-                          : Colors.brown,
-
-                  bgColor: getStatusColor(
-                    item["status"],
-                  ).withOpacity(0.2),
-
-                  text: pesanNotifikasi(
-                        item["title"],
-                        item["status"],
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => DetailPengaduanAdminPage(
+                          pengaduan: item,
+                        ),
                       ),
+                    );
+                  },
 
-                  time: item["created_at"]
-                      .toString()
-                      .substring(11, 16),
+                  child: notifItem(
+                    icon: getUrgencyIcon(
+                      item["urgency_level"] ?? "SEDANG",
+                    ),
 
-                  textColor: getStatusColor(
-                    item["status"],
+                    iconColor: Colors.white,
+
+                    bgColor: getUrgencyColor(
+                      item["urgency_level"] ?? "SEDANG",
+                    ),
+
+                    text: pesanNotifikasi(
+                      item["title"],
+                      item["status"],
+                    ),
+
+                    time: item["created_at"]
+                          .toString()
+                          .substring(11, 16),
+
+                    textColor: getUrgencyColor(
+                      item["urgency_level"] ?? "SEDANG",
+                    ),
                   ),
                 );
               },
@@ -181,57 +205,32 @@ String pesanNotifikasi(
     required String time,
     required Color textColor,
   }) {
-
     return Container(
-      margin: const EdgeInsets.only(
-        bottom: 20,
-      ),
+      margin: const EdgeInsets.only(bottom: 20),
 
-      padding: const EdgeInsets.only(
-        bottom: 15,
-      ),
+      padding: const EdgeInsets.only(bottom: 15),
 
       decoration: BoxDecoration(
-        border: Border(
-          bottom: BorderSide(
-            color: Colors.grey.shade300,
-          ),
-        ),
+        border: Border(bottom: BorderSide(color: Colors.grey.shade300)),
       ),
 
       child: Row(
-        crossAxisAlignment:
-            CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
 
         children: [
-
           Container(
-            width: 35,
-            height: 35,
+            width: 42,
+            height: 42,
 
-            decoration: BoxDecoration(
-              color: bgColor,
-              shape: BoxShape.circle,
-            ),
+            decoration: BoxDecoration(color: bgColor, shape: BoxShape.circle),
 
-            child: Icon(
-              icon,
-              color: iconColor,
-              size: 20,
-            ),
+            child: Icon(icon, color: iconColor, size: 22),
           ),
 
           const SizedBox(width: 12),
 
           Expanded(
-            child: Text(
-              text,
-
-              style: TextStyle(
-                color: textColor,
-                fontSize: 14,
-              ),
-            ),
+            child: Text(text, style: TextStyle(color: textColor, fontSize: 14)),
           ),
 
           const SizedBox(width: 10),
@@ -239,10 +238,7 @@ String pesanNotifikasi(
           Text(
             time,
 
-            style: TextStyle(
-              color: Colors.grey.shade600,
-              fontSize: 13,
-            ),
+            style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
           ),
         ],
       ),

@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:cached_network_image/cached_network_image.dart';
 
 import 'buat_pengaduan.dart';
 import 'akun.dart';
 import 'pengaduan.dart';
 import 'notifikasi.dart';
+
+import '../helper/url_helper.dart';
 
 class DashboardPage extends StatefulWidget {
   final String namaUser;
@@ -42,13 +45,19 @@ class _DashboardPageState extends State<DashboardPage> {
   Future<void> getLiveProfileFoto() async {
     try {
       final res = await http.get(
-        Uri.parse("http://127.0.0.1:8000/api/profile/${widget.emailUser}"),
+        Uri.parse("http://10.0.2.2:8000/api/profile/${widget.emailUser}"),
       );
       if (res.statusCode == 200) {
-        final dataProfil = json.decode(res.body)['data'];
+        final dataProfil = jsonDecode(res.body)['data'];
         if (mounted) {
           setState(() {
-            fotoSekarang = dataProfil['foto_profil'];
+            // PERBAIKAN: Cache-buster disematkan di sini saat data berhasil diambil
+            String? rawFoto = dataProfil['foto_profil'];
+            if (rawFoto != null && rawFoto.isNotEmpty && rawFoto != "null") {
+              fotoSekarang = "$rawFoto?v=${DateTime.now().millisecondsSinceEpoch}";
+            } else {
+              fotoSekarang = null;
+            }
           });
         }
       }
@@ -60,7 +69,7 @@ class _DashboardPageState extends State<DashboardPage> {
   Future<void> getLiveProfile() async {
     try {
       final res = await http.get(
-        Uri.parse("http://127.0.0.1:8000/api/profile/${widget.emailUser}"),
+        Uri.parse("http://10.0.2.2:8000/api/profile/${widget.emailUser}"),
       );
 
       if (res.statusCode == 200) {
@@ -78,36 +87,56 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Future<void> fetchPengaduanTerbaru() async {
-    // --- PERUBAHAN DI SINI ---
-    // Menggunakan API riwayat berdasarkan email agar tidak campur dengan pengaduan orang lain
     final String apiUrl =
-        "http://127.0.0.1:8000/api/pengaduan/riwayat/${widget.emailUser}";
+        "http://10.0.2.2:8000/api/pengaduan/riwayat/${widget.emailUser}";
 
     try {
       final response = await http.get(Uri.parse(apiUrl));
+
+      print("================ RESPONSE =================");
+      print(response.body);
+      print("===========================================");
+
       if (response.statusCode == 200) {
-        final List<dynamic> data = json.decode(response.body)['data'];
+        final List<dynamic> data = jsonDecode(response.body)['data'];
+        
+        debugPrint("DATA DARI SERVER: " + response.body);
+
+      final List<dynamic> dataTerbaru =
+      data.length > 5 ? data.take(5).toList() : data;
+
         if (mounted) {
           setState(() {
-            pengaduanTerbaru = data
-                .map(
-                  (item) => {
-                    "judul": item['judul'] ?? "Tanpa Judul",
-                    "tanggal": item['tanggal_pengaduan'] ?? "-",
-                    "status": item['status'] ?? "Menunggu",
-                    "foto": item['bukti_pengaduan'],
-                  },
-                )
-                .toList();
+            pengaduanTerbaru = dataTerbaru.map((item) {
+              // PERBAIKAN: Tambahkan cache buster ke foto pengaduan agar selalu mutakhir
+              String? rawFoto = item['bukti_pengaduan'];
+              String? finalFoto;
+              if (rawFoto != null && rawFoto.isNotEmpty && rawFoto != "null") {
+                finalFoto = "$rawFoto?v=${DateTime.now().millisecondsSinceEpoch}";
+              }
+
+              return {
+                "judul": item['judul'] ?? "Tanpa Judul",
+                "tanggal": item['tanggal_pengaduan'] ?? "-",
+                "status": item['status'] ?? "Menunggu",
+                "foto": finalFoto ?? rawFoto,
+              };
+            }).toList();
+
             isLoading = false;
           });
         }
       } else {
-        if (mounted) setState(() => isLoading = false);
+        if (mounted) {
+          setState(() => isLoading = false);
+        }
       }
     } catch (e) {
-      print("Error: $e");
-      if (mounted) setState(() => isLoading = false);
+      print("ERROR FETCH : $e");
+
+      if (mounted) {
+        setState(() => isLoading = false);
+      }
     }
   }
 
@@ -117,15 +146,12 @@ class _DashboardPageState extends State<DashboardPage> {
     if (status == "PENDING" || status == "MENUNGGU") {
       return Colors.orange;
     }
-
     if (status == "DIPROSES") {
       return Colors.blue;
     }
-
     if (status == "SELESAI") {
       return Colors.green;
     }
-
     return Colors.grey;
   }
 
@@ -146,7 +172,6 @@ class _DashboardPageState extends State<DashboardPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
         selectedItemColor: Colors.black,
@@ -161,31 +186,33 @@ class _DashboardPageState extends State<DashboardPage> {
               ),
             ).then((_) {
               getLiveProfileFoto();
-
               getLiveProfile();
             });
           }
           if (index == 1) {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => const PengaduanPage()),
+              MaterialPageRoute(
+                builder: (context) => PengaduanPage(emailUser: widget.emailUser),
+              ),
             );
           }
           if (index == 2) {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) =>
-                    BuatPengaduanPage(emailTarget: widget.emailUser),
+                builder: (context) => BuatPengaduanPage(emailTarget: widget.emailUser),
               ),
-            );
+            ).then((_) {
+              // REFRESH DATA SETELAH KEMBALI DARI HALAMAN BUAT PENGADUAN
+              fetchPengaduanTerbaru();
+            });
           }
           if (index == 3) {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) =>
-                    NotifikasiPage(emailTarget: widget.emailUser),
+                builder: (context) => NotifikasiPage(emailTarget: widget.emailUser),
               ),
             );
           }
@@ -207,7 +234,6 @@ class _DashboardPageState extends State<DashboardPage> {
           BottomNavigationBarItem(icon: Icon(Icons.person), label: "Akun"),
         ],
       ),
-
       body: SafeArea(
         child: SingleChildScrollView(
           child: Padding(
@@ -215,7 +241,6 @@ class _DashboardPageState extends State<DashboardPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // HEADER
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -241,25 +266,35 @@ class _DashboardPageState extends State<DashboardPage> {
                         ),
                       ],
                     ),
-
+                    
+                    // FOTO PROFIL
                     CircleAvatar(
                       radius: 18,
                       backgroundColor: Colors.transparent,
-                      child: fotoSekarang != null && fotoSekarang!.isNotEmpty
+                      child: (fotoSekarang != null && fotoSekarang!.isNotEmpty && fotoSekarang != "null")
                           ? ClipOval(
-                              child: Image.network(
-                                fotoSekarang!.startsWith('http')
-                                    ? fotoSekarang!
-                                    : "http://10.0.2.2:8000$fotoSekarang",
+                              child: CachedNetworkImage(
+                                imageUrl: UrlHelper.getFullUrl(fotoSekarang ?? ""),
+                                memCacheWidth: 300,
+                                memCacheHeight: 200,
+                                httpHeaders: const {
+                                  "Connection": "keep-alive",
+                                },
                                 width: 36,
                                 height: 36,
                                 fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) =>
-                                    const Icon(
-                                      Icons.account_circle,
-                                      size: 35,
-                                      color: Colors.black,
-                                    ),
+                                placeholder: (context, url) => Container(
+                                  width: 36,
+                                  height: 36,
+                                  alignment: Alignment.center,
+                                  child: const CircularProgressIndicator(strokeWidth: 2),
+                                ),
+                                errorWidget: (context, url, error) => Container(
+                                  width: 36,
+                                  height: 36,
+                                  color: Colors.grey.shade200,
+                                  child: const Icon(Icons.broken_image, color: Colors.red),
+                                ),
                               ),
                             )
                           : const Icon(
@@ -270,10 +305,7 @@ class _DashboardPageState extends State<DashboardPage> {
                     ),
                   ],
                 ),
-
                 const SizedBox(height: 20),
-
-                // BANNER
                 Stack(
                   children: [
                     Container(
@@ -281,14 +313,11 @@ class _DashboardPageState extends State<DashboardPage> {
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(20),
                         image: const DecorationImage(
-                          image: NetworkImage(
-                            "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRSUgZnChkoRJWVhaAgq4X48HJkou3kN5i23w&s",
-                          ),
+                          image: AssetImage("assets/images/banner.jpg"),
                           fit: BoxFit.cover,
                         ),
                       ),
                     ),
-
                     Positioned(
                       bottom: 15,
                       left: 15,
@@ -335,7 +364,14 @@ class _DashboardPageState extends State<DashboardPage> {
                                         emailTarget: widget.emailUser,
                                       ),
                                     ),
-                                  );
+                                  ).then((value) async {
+                                    if (value == true) {
+                                      await fetchPengaduanTerbaru();
+                                      if (mounted) {
+                                        setState(() {});
+                                      }
+                                    }
+                                  });
                                 },
                                 child: const Text(
                                   "Buat Pengaduan",
@@ -349,10 +385,7 @@ class _DashboardPageState extends State<DashboardPage> {
                     ),
                   ],
                 ),
-
                 const SizedBox(height: 25),
-
-                // TITLE
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -368,7 +401,9 @@ class _DashboardPageState extends State<DashboardPage> {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => const PengaduanPage(),
+                            builder: (context) => PengaduanPage(
+                              emailUser: widget.emailUser,
+                            ),
                           ),
                         );
                       },
@@ -382,39 +417,35 @@ class _DashboardPageState extends State<DashboardPage> {
                     ),
                   ],
                 ),
-
                 const SizedBox(height: 15),
-
                 isLoading
                     ? const Center(child: CircularProgressIndicator())
                     : pengaduanTerbaru.isEmpty
-                    ? Center(
-                        child: Padding(
-                          padding: const EdgeInsets.only(top: 20),
-                          child: Text(
-                            "Belum ada pengaduan",
-                            style: TextStyle(color: Colors.grey.shade500),
-                          ),
-                        ),
-                      )
-                    : Column(
-                        children: pengaduanTerbaru.map((item) {
-                          String title =
-                              item["judul"]?.toString() ?? "Tanpa Judul";
-                          String tanggal = item["tanggal"]?.toString() ?? "-";
-                          String status =
-                              item["status"]?.toString() ?? "Menunggu";
-                          String? foto = item["foto"]?.toString();
+                        ? Center(
+                            child: Padding(
+                              padding: const EdgeInsets.only(top: 20),
+                              child: Text(
+                                "Belum ada pengaduan",
+                                style: TextStyle(color: Colors.grey.shade500),
+                              ),
+                            ),
+                          )
+                        : Column(
+                            children: pengaduanTerbaru.map((item) {
+                              String title = item["judul"]?.toString() ?? "Tanpa Judul";
+                              String tanggal = item["tanggal"]?.toString() ?? "-";
+                              String status = item["status"]?.toString() ?? "Menunggu";
+                              String? foto = item["foto"]?.toString();
 
-                          return buildPengaduan(
-                            title,
-                            tanggal,
-                            status,
-                            getStatusColor(status),
-                            foto,
-                          );
-                        }).toList(),
-                      ),
+                              return buildPengaduan(
+                                title,
+                                tanggal,
+                                status,
+                                getStatusColor(status),
+                                foto,
+                              );
+                            }).toList(),
+                          ),
               ],
             ),
           ),
@@ -441,19 +472,37 @@ class _DashboardPageState extends State<DashboardPage> {
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(8),
-            child: fotoUrl != null && fotoUrl.isNotEmpty
-                ? Image.network(
-                    "http://10.0.2.2:8000$fotoUrl",
-                    width: 50,
-                    height: 50,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => Container(
+            child: (fotoUrl != null && fotoUrl.isNotEmpty && fotoUrl != "null")
+                ? CachedNetworkImage(
+                    imageUrl: UrlHelper.getFullUrl(fotoUrl),
+                    memCacheWidth: 300,
+                    memCacheHeight: 200,
+                    httpHeaders: const {
+                      "Connection": "keep-alive",
+                    },
                       width: 50,
                       height: 50,
-                      color: Colors.grey.shade200,
-                      child: const Icon(Icons.broken_image, color: Colors.grey),
-                    ),
-                  )
+                      fit: BoxFit.cover,
+                      placeholder: (context, url) => Container(
+                        width: 50,
+                        height: 50,
+                        alignment: Alignment.center,
+                        child: const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      ),
+                      errorWidget: (context, url, error) {
+                        debugPrint("DEBUG ERROR FOTO: $error");
+                        return Container(
+                          width: 50,
+                          height: 50,
+                          color: Colors.grey.shade200,
+                          child: const Icon(Icons.broken_image, color: Colors.red),
+                        );
+                      },
+                    )
                 : Container(
                     width: 50,
                     height: 50,
@@ -464,9 +513,7 @@ class _DashboardPageState extends State<DashboardPage> {
                     ),
                   ),
           ),
-
           const SizedBox(width: 10),
-
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -485,7 +532,6 @@ class _DashboardPageState extends State<DashboardPage> {
               ],
             ),
           ),
-
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             decoration: BoxDecoration(

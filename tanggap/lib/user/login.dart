@@ -34,7 +34,7 @@ class _LoginPageState extends State<LoginPage> {
     });
 
     // Sesuaikan URL ke Laravel di Emulator
-    String apiUrl = 'http://127.0.0.1:8000/api/login';
+    String apiUrl = 'http://10.0.2.2:8000/api/login';
 
     try {
       final response = await http.post(
@@ -131,19 +131,6 @@ class _LoginPageState extends State<LoginPage> {
                         Column(
                           children: [
                             const SizedBox(height: 10),
-
-                            Align(
-                              alignment: Alignment.centerLeft,
-                              child: const Text(
-                                "Login User",
-                                style: TextStyle(
-                                  color: Colors.black,
-                                  fontSize: 18,
-                                ),
-                              ),
-                            ),
-
-                            const SizedBox(height: 25),
 
                             const Icon(
                               Icons.account_circle,

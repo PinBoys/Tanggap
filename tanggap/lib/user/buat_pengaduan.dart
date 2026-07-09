@@ -3,6 +3,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
 import 'dart:io';
 
+import '../helper/image_helper.dart';
+
 class BuatPengaduanPage extends StatefulWidget {
   // Tambahkan email agar Laravel tahu ini pengaduan milik siapa
   final String emailTarget; 
@@ -17,7 +19,6 @@ class _BuatPengaduanPageState extends State<BuatPengaduanPage> {
   final TextEditingController _lokasiCtrl = TextEditingController();
   final TextEditingController _deskripsiCtrl = TextEditingController();
 
-  String? urgensi;
   String? dampak;
   String? sensitivitas;
   String? alternatif;
@@ -27,7 +28,7 @@ class _BuatPengaduanPageState extends State<BuatPengaduanPage> {
   List<XFile> _imageFiles = [];
   bool isLoading = false;
 
-  final String apiUrl = "http://127.0.0.1:8000/api/pengaduan";
+  final String apiUrl = "http://10.0.2.2:8000/api/pengaduan";
 
   Future<void> _pickImages() async {
     if (_imageFiles.length >= 5) {
@@ -37,7 +38,7 @@ class _BuatPengaduanPageState extends State<BuatPengaduanPage> {
       return;
     }
 
-    final List<XFile> selectedImages = await _picker.pickMultiImage();
+    final List<XFile> selectedImages = await _picker.pickMultiImage(imageQuality: 80,);
     if (selectedImages.isNotEmpty) {
       setState(() {
         _imageFiles.addAll(selectedImages);
@@ -82,20 +83,53 @@ class _BuatPengaduanPageState extends State<BuatPengaduanPage> {
       request.fields['cakupan'] = cakupan ?? 'Pribadi'; 
 
       // Mengisi Data Foto Bukti 
+      // ==============================
+      // COMPRESS FOTO SEBELUM UPLOAD
+      // ==============================
+
       for (var file in _imageFiles) {
-        request.files.add(await http.MultipartFile.fromPath('bukti[]', file.path));
+
+        File originalFile = File(file.path);
+
+        File uploadFile;
+
+        try {
+          uploadFile = await ImageHelper.compress(originalFile);
+        } catch (e) {
+          // Jika compress gagal, upload file asli
+          uploadFile = originalFile;
+        }
+
+        request.files.add(
+          await http.MultipartFile.fromPath(
+            'bukti[]',
+            uploadFile.path,
+          ),
+        );
       }
 
       var response = await request.send();
       var responseData = await response.stream.bytesToString();
 
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Pengaduan berhasil dikirim!"), backgroundColor: Colors.green),
-        );
-        Navigator.pop(context); 
-      } else {
+    if (response.statusCode == 200 || response.statusCode == 201) {
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Pengaduan berhasil dikirim!"),
+          backgroundColor: Colors.green,
+        ),
+      );
+
+      // beri waktu Laravel menyelesaikan penyimpanan
+      await Future.delayed(
+        const Duration(seconds: 1),
+      );
+
+      Navigator.pop(context, true);
+
+    } else {
         throw Exception(responseData);
       }
     } catch (e) {
@@ -185,19 +219,8 @@ class _BuatPengaduanPageState extends State<BuatPengaduanPage> {
             ),
             const SizedBox(height: 18),
 
-            // DROPDOWN URGENSI (Opsional di database)
-            const Text("Tingkat Urgensi", style: TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            _buildDropdown(
-              value: urgensi,
-              hint: "Pilih Tingkat Urgensi",
-              items: ["Sangat Tinggi", "Tinggi", "Sedang", "Rendah"],
-              onChanged: (value) => setState(() => urgensi = value),
-            ),
-            const SizedBox(height: 18),
-
             // DROPDOWN DAMPAK
-            const Text("Dampak Keselamatan", style: TextStyle(fontWeight: FontWeight.bold)),
+            const Text("Tingkat Bahaya", style: TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             _buildDropdown(
               value: dampak,
@@ -208,7 +231,7 @@ class _BuatPengaduanPageState extends State<BuatPengaduanPage> {
             const SizedBox(height: 18),
 
             // DROPDOWN SENSITIVITAS
-            const Text("Sensitivitas Waktu", style: TextStyle(fontWeight: FontWeight.bold)),
+            const Text("Sifat Mendesak", style: TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             _buildDropdown(
               value: sensitivitas,
@@ -219,7 +242,7 @@ class _BuatPengaduanPageState extends State<BuatPengaduanPage> {
             const SizedBox(height: 18),
 
             // DROPDOWN ALTERNATIF
-            const Text("Ketersediaan Alternatif", style: TextStyle(fontWeight: FontWeight.bold)),
+            const Text("Adanya Jalan/Fasilitas Pengganti", style: TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             _buildDropdown(
               value: alternatif,
@@ -230,7 +253,7 @@ class _BuatPengaduanPageState extends State<BuatPengaduanPage> {
             const SizedBox(height: 18),
 
             // DROPDOWN CAKUPAN
-            const Text("Cakupan Populasi", style: TextStyle(fontWeight: FontWeight.bold)),
+            const Text("Jumlah Warga Terdampak", style: TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             _buildDropdown(
               value: cakupan,

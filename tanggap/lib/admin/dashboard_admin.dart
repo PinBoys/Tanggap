@@ -22,6 +22,8 @@ class _DashboardAdminPageState extends State<DashboardAdminPage> {
   int menunggu = 0;
 
   List complaints = [];
+  List grafikMingguan = [];
+  
 
   @override
   void initState() {
@@ -33,22 +35,29 @@ class _DashboardAdminPageState extends State<DashboardAdminPage> {
   Future<void> getComplaints() async {
     try {
       final response = await http.get(
-        Uri.parse("http://127.0.0.1:8000/api/admin/complaints"),
+        Uri.parse("http://10.0.2.2:8000/api/admin/complaints"),
       );
 
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200) {
         setState(() {
+        
           complaints = data['data'];
-
+      
+          grafikMingguan = data['grafik_mingguan'] ?? [];
+      
           totalLaporan = complaints.length;
-
-          selesai = complaints.where((e) => e['status'] == 'SELESAI').length;
-
-          diproses = complaints.where((e) => e['status'] == 'DIPROSES').length;
-
-          menunggu = complaints.where((e) => e['status'] == 'PENDING').length;
+      
+          selesai =
+              complaints.where((e) => e['status'] == 'SELESAI').length;
+      
+          diproses =
+              complaints.where((e) => e['status'] == 'DIPROSES').length;
+      
+          menunggu =
+              complaints.where((e) => e['status'] == 'PENDING').length;
+      
         });
       }
     } catch (e) {
@@ -81,7 +90,7 @@ Future<void> getProfile() async {
 
     final response = await http.get(
       Uri.parse(
-        "http://127.0.0.1:8000/api/admin/profile",
+        "http://10.0.2.2:8000/api/admin/profile",
       ),
     );
 
@@ -239,15 +248,14 @@ Future<void> getProfile() async {
 
                 const SizedBox(height: 20),
 
-                _buildBar("Dusun Graha", 10),
-
-                _buildBar("Dusun Melati", 25),
-
-                _buildBar("Dusun Mawar", 15),
-
-                _buildBar("Dusun Sayur", 20),
-
-                _buildBar("Dusun Marga", 5),
+                Column(
+                  children: grafikMingguan.map((item) {
+                    return _buildBar(
+                      item["hari"],
+                      (item["total"] as num).toDouble(),
+                    );
+                  }).toList(),
+                ),
 
                 const SizedBox(height: 30),
 
@@ -424,7 +432,9 @@ Future<void> getProfile() async {
                 ),
 
                 FractionallySizedBox(
-                  widthFactor: value / 30,
+                  widthFactor: value == 0
+                      ? 0
+                      : (value / 10).clamp(0.0, 1.0),
 
                   child: Container(
                     height: 14,
