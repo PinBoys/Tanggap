@@ -35,7 +35,7 @@ class _DetailPengaduanPageState extends State<DetailPengaduanPage> {
     try {
       final response = await http.get(
         Uri.parse(
-          "http://10.0.2.2:8000/api/pengaduan/detail/${widget.idPengaduan}",
+          UrlHelper.api('/api/pengaduan/detail/${widget.idPengaduan}'),
         ),
       );
 
@@ -72,7 +72,7 @@ class _DetailPengaduanPageState extends State<DetailPengaduanPage> {
 
     try {
       final response = await http.post(
-        Uri.parse("http://10.0.2.2:8000/api/pengaduan/${dataPengaduan?['id']}/review"),
+        Uri.parse(UrlHelper.api('/api/pengaduan/${dataPengaduan?['id']}/review')),
         headers: {"Content-Type": "application/json"},
         body: json.encode({
           "rating": _userSelectedRating,
@@ -125,7 +125,7 @@ class _DetailPengaduanPageState extends State<DetailPengaduanPage> {
 
     // Jika path dari database dimulai dengan '/', hapus agar tidak double slash
     String cleanPath = url.startsWith('/') ? url.substring(1) : url;
-    return "http://10.0.2.2:8000/$cleanPath?v=$_detailImageVersion";
+    return UrlHelper.api('/$cleanPath?v=$_detailImageVersion');
   }
 
   @override

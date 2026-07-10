@@ -3,6 +3,8 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'detail_pengaduan.dart';
 
+import '../helper/url_helper.dart';
+
 class PengaduanPage extends StatefulWidget {
   final String emailUser;
 
@@ -62,7 +64,7 @@ class _PengaduanPageState extends State<PengaduanPage> {
 
   Future<void> fetchDataPengaduan() async {
 
-  final String apiUrl = "http://10.0.2.2:8000/api/pengaduan/status/${widget.emailUser}";
+  final String apiUrl = UrlHelper.api('/api/pengaduan/status/${widget.emailUser}');
   
     try {
       final response = await http.get(Uri.parse(apiUrl));

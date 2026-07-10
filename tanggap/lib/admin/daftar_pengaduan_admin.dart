@@ -4,6 +4,8 @@ import 'package:http/http.dart' as http;
 import 'drawer_admin.dart';
 import 'detail_pengaduan_admin.dart';
 
+import '../helper/url_helper.dart';
+
 class DaftarPengaduanAdminPage extends StatefulWidget {
   const DaftarPengaduanAdminPage({super.key});
 
@@ -23,7 +25,7 @@ class _DaftarPengaduanAdminPageState extends State<DaftarPengaduanAdminPage> {
 
   Future<void> getPengaduan() async {
     try {
-      final response = await http.get(Uri.parse("http://10.0.2.2:8000/api/admin/complaints"));
+      final response = await http.get(Uri.parse(UrlHelper.api('/api/admin/complaints')));
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         setState(() {

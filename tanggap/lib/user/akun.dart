@@ -30,7 +30,7 @@ class _AkunPageState extends State<AkunPage> {
   }
 
   Future<void> fetchProfileData() async {
-    String apiUrl = "http://10.0.2.2:8000/api/profile/${widget.emailTarget}";
+    String apiUrl = UrlHelper.api('/api/profile/${widget.emailTarget}');
 
     try {
       final response = await http.get(Uri.parse(apiUrl));
@@ -619,7 +619,7 @@ class _EditProfilPageState extends State<EditProfilPage> {
     try {
       var request = http.MultipartRequest(
         'POST',
-        Uri.parse('http://10.0.2.2:8000/api/profile/update'),
+        Uri.parse(UrlHelper.api('/api/profile/update')), 
       );
 
       // Data Teks - Menggunakan parameter widget.email yang dikirim dari AkunPage secara sah
@@ -861,7 +861,7 @@ class _UbahPasswordPageState extends State<UbahPasswordPage> {
     setState(() => isLoading = true);
     try {
       final response = await http.post(
-        Uri.parse('http://10.0.2.2:8000/api/profile/change-password'),
+        Uri.parse(UrlHelper.api('/api/profile/change-password')), 
         headers: {
           "Content-Type": "application/json",
           "Accept": "application/json",
@@ -1012,7 +1012,7 @@ class _RiwayatPageState extends State<RiwayatPage> {
   Future<void> fetchRiwayat() async {
     try {
       final response = await http.get(
-        Uri.parse("http://10.0.2.2:8000/api/pengaduan/riwayat/${widget.email}"),
+        Uri.parse(UrlHelper.api('/api/pengaduan/riwayat/${widget.email}')),
       );
       if (response.statusCode == 200) {
         final data = json.decode(response.body)['data'];

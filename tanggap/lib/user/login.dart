@@ -5,6 +5,8 @@ import 'register.dart';
 import 'dashboard.dart';
 import 'lupa_password.dart';
 
+import '../helper/url_helper.dart';
+
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
 
@@ -34,7 +36,7 @@ class _LoginPageState extends State<LoginPage> {
     });
 
     // Sesuaikan URL ke Laravel di Emulator
-    String apiUrl = 'http://10.0.2.2:8000/api/login';
+    String apiUrl = UrlHelper.api('/api/login');
 
     try {
       final response = await http.post(

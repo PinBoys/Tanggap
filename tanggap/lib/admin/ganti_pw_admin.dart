@@ -4,6 +4,8 @@ import 'dart:convert';
 import 'dart:async'; // Ditambahkan untuk batas waktu (timeout)
 import 'login_admin.dart';
 
+import '../helper/url_helper.dart';
+
 class GantiPasswordPage extends StatefulWidget {
   final String email;
   const GantiPasswordPage({super.key, required this.email});
@@ -38,7 +40,7 @@ class _GantiPasswordPageState extends State<GantiPasswordPage> {
     });
 
     // URL diubah menyesuaikan route yang baru kita buat di Laravel
-    String apiUrl = 'http://10.0.2.2:8000/api/update-password';
+    String apiUrl = UrlHelper.api('/api/update-password');
     
     try {
       final response = await http.post(

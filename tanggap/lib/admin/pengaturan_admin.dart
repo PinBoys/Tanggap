@@ -5,6 +5,8 @@ import 'dart:convert';
 import 'dashboard_admin.dart';
 import 'logout_admin.dart';
 
+import '../helper/url_helper.dart';
+
 class PengaturanAdminPage extends StatefulWidget {
   const PengaturanAdminPage({super.key});
 
@@ -39,7 +41,7 @@ class _PengaturanAdminPageState extends State<PengaturanAdminPage> {
   Future<void> getProfile() async {
     try {
       final response = await http.get(
-        Uri.parse("http://10.0.2.2:8000/api/admin/profile"),
+        Uri.parse(UrlHelper.api('/api/admin/profile')),
       );
 
       print(response.body);
@@ -63,7 +65,7 @@ class _PengaturanAdminPageState extends State<PengaturanAdminPage> {
   Future<void> updateProfile() async {
     try {
       final response = await http.post(
-        Uri.parse("http://10.0.2.2:8000/api/admin/profile/update"),
+        Uri.parse(UrlHelper.api('/api/admin/profile/update')),
 
         body: {
           "full_name": namaController.text,
@@ -96,7 +98,7 @@ class _PengaturanAdminPageState extends State<PengaturanAdminPage> {
     }
 
     final response = await http.post(
-      Uri.parse("http://10.0.2.2:8000/api/admin/change-password"),
+      Uri.parse(UrlHelper.api('/api/admin/change-password')),
 
       body: {
         "old_password": passwordLamaController.text,

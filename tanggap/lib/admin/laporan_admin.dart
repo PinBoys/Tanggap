@@ -3,6 +3,8 @@ import 'drawer_admin.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
+import '../helper/url_helper.dart';
+
 class LaporanAdminPage extends StatefulWidget {
   const LaporanAdminPage({super.key});
 
@@ -36,7 +38,7 @@ class _LaporanAdminPageState
 
     final response = await http.get(
       Uri.parse(
-        "http://10.0.2.2:8000/api/admin/complaints?filter=$selectedFilter",
+        UrlHelper.api('/api/admin/complaints?filter=$selectedFilter'),
       ),
     );
 

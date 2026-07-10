@@ -5,6 +5,8 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'notifikasi_admin.dart';
 
+import '../helper/url_helper.dart';
+
 class DashboardAdminPage extends StatefulWidget {
   const DashboardAdminPage({super.key});
 
@@ -35,7 +37,7 @@ class _DashboardAdminPageState extends State<DashboardAdminPage> {
   Future<void> getComplaints() async {
     try {
       final response = await http.get(
-        Uri.parse("http://10.0.2.2:8000/api/admin/complaints"),
+        Uri.parse(UrlHelper.api('/api/admin/complaints')),
       );
 
       final data = jsonDecode(response.body);
@@ -90,7 +92,7 @@ Future<void> getProfile() async {
 
     final response = await http.get(
       Uri.parse(
-        "http://10.0.2.2:8000/api/admin/profile",
+        UrlHelper.api('/api/admin/profile'),
       ),
     );
 

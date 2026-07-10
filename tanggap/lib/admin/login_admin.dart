@@ -4,6 +4,8 @@ import 'lupa_pw_admin.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
+import '../helper/url_helper.dart';
+
 class LoginAdminPage extends StatefulWidget {
   const LoginAdminPage({super.key});
 
@@ -18,7 +20,7 @@ class _LoginAdminPageState extends State<LoginAdminPage> {
   bool isLoading = false;
   bool isPasswordHidden = true;
 
-  final String apiUrl = "http://10.0.2.2:8000/api/admin/login";
+  final String apiUrl = UrlHelper.api('/api/admin/login');
 
   Future<void> loginAdmin() async {
     if (emailCtrl.text.isEmpty || passwordCtrl.text.isEmpty) {

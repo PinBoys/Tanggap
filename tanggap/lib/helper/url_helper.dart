@@ -1,6 +1,13 @@
 class UrlHelper {
-  // Anda bisa mengganti URL ini di satu tempat saja jika nanti deploy ke server online
-  static const String baseUrl = "http://10.0.2.2:8000"; 
+  /// Base URL API/Laravel. Ubah di sini saja saat pindah server.
+  static const String baseUrl = "http://10.0.2.2:8000";
+
+  /// Buat URL endpoint API.
+  /// Contoh: UrlHelper.api('/api/pengaduan')
+  static String api(String path) {
+    final clean = (path.startsWith('/') ? path.substring(1) : path);
+    return "$baseUrl/$clean";
+  }
 
   static String getFullUrl(String? path) {
     if (path == null || path.isEmpty) return "";

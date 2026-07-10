@@ -4,6 +4,8 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:async';
 
+import '../helper/url_helper.dart';
+
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
 
@@ -47,7 +49,7 @@ class _RegisterPageState extends State<RegisterPage> {
       isLoading = true;
     });
 
-    String apiUrl = 'http://10.0.2.2:8000/api/register';
+    String apiUrl = UrlHelper.api('/api/register');
 
     try {
       final response = await http.post(

@@ -3,6 +3,8 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'detail_pengaduan.dart'; // <--- TAMBAHAN: Import halaman detail
 
+import '../helper/url_helper.dart';
+
 class NotifikasiPage extends StatefulWidget {
   final String emailTarget; 
   
@@ -24,7 +26,7 @@ class _NotifikasiPageState extends State<NotifikasiPage> {
 
   Future<void> fetchNotifikasi() async {
     try {
-      final response = await http.get(Uri.parse("http://10.0.2.2:8000/api/pengaduan/riwayat/${widget.emailTarget}"));
+      final response = await http.get(Uri.parse(UrlHelper.api('/api/pengaduan/riwayat/${widget.emailTarget}')));
       
       if (response.statusCode == 200) {
         final data = json.decode(response.body)['data'];

@@ -4,6 +4,8 @@ import 'dart:convert';
 import 'dart:async';
 import 'ganti_password.dart'; // Pastikan file ganti_password.dart sudah dibuat
 
+import '../helper/url_helper.dart';
+
 class LupaPasswordPage extends StatefulWidget {
   const LupaPasswordPage({super.key});
 
@@ -30,7 +32,7 @@ class _LupaPasswordPageState extends State<LupaPasswordPage> {
     });
 
     // Sesuaikan URL ke Laravel di Android Emulator
-    String apiUrl = 'http://10.0.2.2:8000/api/check-email';
+    String apiUrl = UrlHelper.api('/api/check-email');
     
     try {
       final response = await http.post(

@@ -22,7 +22,6 @@ class _DetailPengaduanAdminPageState extends State<DetailPengaduanAdminPage> {
   Map<String, dynamic>? detailLengkap;
   bool isLoading = true;
 
-  static const String baseUrl = "http://10.0.2.2:8000";
 
   @override
   void initState() {
@@ -32,7 +31,7 @@ class _DetailPengaduanAdminPageState extends State<DetailPengaduanAdminPage> {
 
   Future<void> _fetchDetailLengkap() async {
     try {
-      final url = "$baseUrl/api/pengaduan/detail/${widget.pengaduan['id']}";
+      final url = UrlHelper.api('/api/pengaduan/detail/${widget.pengaduan['id']}');
 
       debugPrint("REQUEST => $url");
 
@@ -65,7 +64,7 @@ class _DetailPengaduanAdminPageState extends State<DetailPengaduanAdminPage> {
         return path.replaceAll("127.0.0.1", "10.0.2.2");
       }
 
-      return "$baseUrl$path";
+      return UrlHelper.api(path);
     }
 
   String getDampak(dynamic value) {

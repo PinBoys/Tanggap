@@ -45,7 +45,7 @@ class _DashboardPageState extends State<DashboardPage> {
   Future<void> getLiveProfileFoto() async {
     try {
       final res = await http.get(
-        Uri.parse("http://10.0.2.2:8000/api/profile/${widget.emailUser}"),
+        Uri.parse(UrlHelper.api('api/profile/${widget.emailUser}')),
       );
       if (res.statusCode == 200) {
         final dataProfil = jsonDecode(res.body)['data'];
@@ -69,7 +69,7 @@ class _DashboardPageState extends State<DashboardPage> {
   Future<void> getLiveProfile() async {
     try {
       final res = await http.get(
-        Uri.parse("http://10.0.2.2:8000/api/profile/${widget.emailUser}"),
+        Uri.parse(UrlHelper.api('api/profile/${widget.emailUser}')),
       );
 
       if (res.statusCode == 200) {
@@ -88,7 +88,7 @@ class _DashboardPageState extends State<DashboardPage> {
 
   Future<void> fetchPengaduanTerbaru() async {
     final String apiUrl =
-        "http://10.0.2.2:8000/api/pengaduan/riwayat/${widget.emailUser}";
+        UrlHelper.api('/api/pengaduan/riwayat/${widget.emailUser}');
 
     try {
       final response = await http.get(Uri.parse(apiUrl));

@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'dart:io';
 
 import '../helper/image_helper.dart';
+import '../helper/url_helper.dart';
 
 class BuatPengaduanPage extends StatefulWidget {
   // Tambahkan email agar Laravel tahu ini pengaduan milik siapa
@@ -28,7 +29,7 @@ class _BuatPengaduanPageState extends State<BuatPengaduanPage> {
   List<XFile> _imageFiles = [];
   bool isLoading = false;
 
-  final String apiUrl = "http://10.0.2.2:8000/api/pengaduan";
+  final String apiUrl = UrlHelper.api('/api/pengaduan');
 
   Future<void> _pickImages() async {
     if (_imageFiles.length >= 5) {

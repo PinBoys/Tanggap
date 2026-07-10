@@ -4,6 +4,8 @@ import 'package:http/http.dart' as http;
 
 import 'detail_pengaduan_admin.dart';
 
+import '../helper/url_helper.dart';
+
 class NotifikasiAdminPage extends StatefulWidget {
   const NotifikasiAdminPage({super.key});
 
@@ -24,7 +26,7 @@ class _NotifikasiAdminPageState extends State<NotifikasiAdminPage> {
   Future<void> getNotifikasi() async {
     try {
       final response = await http.get(
-        Uri.parse("http://10.0.2.2:8000/api/admin/notifikasi"),
+        Uri.parse(UrlHelper.api('/api/admin/notifikasi')),
       );
 
       final data = jsonDecode(response.body);

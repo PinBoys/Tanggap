@@ -8,6 +8,8 @@ import 'laporan_admin.dart';
 import 'pengaturan_admin.dart';
 import 'logout_admin.dart';
 
+import '../helper/url_helper.dart';
+
 class DrawerAdmin extends StatefulWidget {
   const DrawerAdmin({super.key});
 
@@ -31,7 +33,7 @@ class _DrawerAdminState extends State<DrawerAdmin> {
 
   Future<void> getProfile() async {
     try {
-      final response = await http.get(Uri.parse("http://10.0.2.2:8000/api/admin/profile"));
+      final response = await http.get(Uri.parse(UrlHelper.api('/api/admin/profile')));
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         if (data["status"] == "success") {

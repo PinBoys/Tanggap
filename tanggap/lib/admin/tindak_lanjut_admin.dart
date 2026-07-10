@@ -8,6 +8,7 @@ import 'package:image_picker/image_picker.dart'; // Wajib install image_picker
 import 'dart:typed_data'; // Untuk web image bytes
 
 import 'daftar_pengaduan_admin.dart';
+import '../helper/url_helper.dart';
 
 class TindakLanjutAdminPage extends StatefulWidget {
   final Map<String, dynamic> pengaduan;
@@ -122,7 +123,7 @@ class _TindakLanjutAdminPageState extends State<TindakLanjutAdminPage> {
       // Menggunakan rute baru khusus tindak lanjut (murni POST)
       var request = http.MultipartRequest(
         'POST', 
-        Uri.parse("http://10.0.2.2:8000/api/admin/pengaduan/${widget.pengaduan['id']}/tindak-lanjut")
+        Uri.parse(UrlHelper.api('/api/admin/pengaduan/${widget.pengaduan['id']}/tindak-lanjut'))
       );
 
       // PERBAIKAN: Menambahkan Accept header agar Laravel tidak membalas dengan HTML Error
