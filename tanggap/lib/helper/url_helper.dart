@@ -1,9 +1,8 @@
 class UrlHelper {
   /// Base URL API/Laravel. Ubah di sini saja saat pindah server.
-  static const String baseUrl = "http://10.0.2.2:8000";
+  static const String baseUrl = "http://10.78.100.240:8000";
 
   /// Buat URL endpoint API.
-  /// Contoh: UrlHelper.api('/api/pengaduan')
   static String api(String path) {
     final clean = (path.startsWith('/') ? path.substring(1) : path);
     return "$baseUrl/$clean";
