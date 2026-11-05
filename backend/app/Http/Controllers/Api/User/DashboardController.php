@@ -12,6 +12,15 @@ class DashboardController extends Controller
      */
 public function pengaduanTerbaru()
 {
+    \Log::info('CEK DATABASE TANGGAP', [
+    'database' => \DB::select('SELECT current_database() AS db'),
+    'user' => \DB::select('SELECT current_user AS db_user'),
+    'search_path' => \DB::select('SHOW search_path'),
+    'complaints' => \DB::select("
+        SELECT to_regclass('public.complaints') AS tabel
+    "),
+]);
+
     $pengaduan = DB::table('complaints')
         ->select(
             'complaints.id as id_pengaduan',
