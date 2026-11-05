@@ -55,17 +55,3 @@ Route::post('/admin/change-password', [AdminProfileController::class,'changePass
 Route::post('/admin/pengaduan/{id}/tindak-lanjut', [ComplaintActionController::class, 'storeTindakLanjut']);
 // Endpoint untuk menyimpan Rating & Komentar dari Warga
 Route::post('/pengaduan/{id}/review', [PengaduanController::class, 'storeReview']);
-
-use Illuminate\Support\Facades\DB;
-
-Route::get('/debug-db', function () {
-    return response()->json([
-        'database' => DB::connection()->getDatabaseName(),
-        'search_path' => DB::selectOne('SHOW search_path')->search_path,
-        'complaints_table' => DB::select("
-            SELECT to_regclass('public.complaints') AS table_name
-        "),
-        'default_connection' => config('database.default'),
-        'configured_search_path' => config('database.connections.pgsql.search_path'),
-    ]);
-});
