@@ -43,3 +43,47 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Laravel Environment
+.env
+.env.*
+!.env.example
+
+# Laravel Dependencies
+/vendor/
+
+# Laravel Cache
+/bootstrap/cache/*.php
+
+# Laravel Storage
+/storage/*.key
+/storage/framework/cache/*
+/storage/framework/sessions/*
+/storage/framework/views/*
+/storage/logs/*
+
+# Laravel Testing
+.phpunit.cache/
+.phpunit.result.cache
+
+# IDE
+/.idea/
+/.vscode/
+
+# Laravel Environment
+/backend/.env
+/backend/.env.*
+!/backend/.env.example
+
+# Laravel Dependencies
+/backend/vendor/
+
+# Laravel Cache
+/backend/bootstrap/cache/*.php
+
+# Laravel Storage
+/backend/storage/*.key
+/backend/storage/framework/cache/*
+/backend/storage/framework/sessions/*
+/backend/storage/framework/views/*
+/backend/storage/logs/*
