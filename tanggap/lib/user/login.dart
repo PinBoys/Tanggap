@@ -76,7 +76,7 @@ class _LoginPageState extends State<LoginPage> {
           MaterialPageRoute(
             builder: (context) => DashboardPage(
               namaUser: namaLengkap,
-              emailUser: emailController.text.trim(), // <--- KIRIM EMAIL AKTIF SEKARANG KE DASHBOARD
+              emailUser: emailController.text.trim(),
               fotoProfile: fotoProfil, 
             ),
           ),

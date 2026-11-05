@@ -1,25 +1,26 @@
-class UrlHelper {
-  /// Base URL API/Laravel. Ubah di sini saja saat pindah server.
-  static const String baseUrl = "http://10.78.100.240:8000";
 
-  /// Buat URL endpoint API.
+class UrlHelper {
+  static const String baseUrl = "https://tanggap.ethiodeploy.app";
+
+  // URL endpoint API.
   static String api(String path) {
-    final clean = (path.startsWith('/') ? path.substring(1) : path);
+    final clean = path.startsWith('/')
+        ? path.substring(1)
+        : path;
+
     return "$baseUrl/$clean";
   }
 
   static String getFullUrl(String? path) {
     if (path == null || path.isEmpty) return "";
 
-    // 1. Bersihkan escaping slash
     String clean = path.replaceAll('\\/', '/');
 
-    // 2. Bersihkan duplikasi /storage/
+    // Menghindari duplikasi /storage/
     if (clean.contains('/storage/')) {
       clean = clean.split('/storage/').last;
     }
 
-    // Menghilangkan slash di awal jika ada (untuk mencegah double slash)
     if (clean.startsWith('/')) {
       clean = clean.substring(1);
     }

@@ -55,3 +55,7 @@ Route::post('/admin/change-password', [AdminProfileController::class,'changePass
 Route::post('/admin/pengaduan/{id}/tindak-lanjut', [ComplaintActionController::class, 'storeTindakLanjut']);
 // Endpoint untuk menyimpan Rating & Komentar dari Warga
 Route::post('/pengaduan/{id}/review', [PengaduanController::class, 'storeReview']);
+Route::get(
+    '/pengaduan/kategori',
+    [PengaduanController::class, 'categories']
+);
