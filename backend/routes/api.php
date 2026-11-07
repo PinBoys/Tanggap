@@ -17,6 +17,8 @@ use App\Http\Controllers\Api\Admin\AdminDashboardController;
 use App\Http\Controllers\Api\Admin\AdminProfileController;
 use App\Http\Controllers\Api\Admin\NotificationController;
 use App\Http\Controllers\Api\Admin\ComplaintActionController;
+use App\Http\Controllers\Api\Admin\AnalisisAIController;
+
 
 // ================= AUTH USER =================
 Route::post('/register', [AuthController::class, 'register']);
@@ -59,3 +61,7 @@ Route::get(
     '/pengaduan/kategori',
     [PengaduanController::class, 'categories']
 );
+
+// ================= ANALISIS AI ADMIN =================
+Route::get('/admin/analisis-ai', [AnalisisAIController::class, 'index']);
+Route::post('/admin/analisis-ai/generate', [AnalisisAIController::class, 'generate']);
