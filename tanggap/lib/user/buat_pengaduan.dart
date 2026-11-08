@@ -8,6 +8,7 @@ import 'dart:convert';
 import '../helper/image_helper.dart';
 import '../helper/url_helper.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../pages/pilih_lokasi_page.dart';
 
 class BuatPengaduanPage extends StatefulWidget {
@@ -98,6 +99,43 @@ class _BuatPengaduanPageState extends State<BuatPengaduanPage> {
         _errorKategori = e.toString();
         _isLoadingKategori = false;
       });
+    }
+  }
+
+  // Membuka koordinat lokasi terpilih di aplikasi Google Maps.
+  // Tidak menggunakan Google Maps API Key atau SDK.
+  Future<void> _bukaGoogleMaps() async {
+    if (_koordinatTerpilih == null) return;
+
+    final latitude = _koordinatTerpilih!.latitude;
+    final longitude = _koordinatTerpilih!.longitude;
+
+    final uri = Uri.parse(
+      'https://www.google.com/maps/search/?api=1&query=$latitude,$longitude',
+    );
+
+    try {
+      final berhasil = await launchUrl(
+        uri,
+        mode: LaunchMode.externalApplication,
+      );
+
+      if (!berhasil && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Tidak dapat membuka Google Maps.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Gagal membuka Google Maps: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
@@ -383,41 +421,99 @@ class _BuatPengaduanPageState extends State<BuatPengaduanPage> {
               width: double.infinity,
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: const Color(0xffEAF5EF),
-                borderRadius: BorderRadius.circular(16),
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(18),
                 border: Border.all(
-                  color: const Color(0xffC9E4D3),
+                  color: const Color(0xffDCEBE2),
                 ),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xff176B45).withOpacity(0.06),
+                    blurRadius: 14,
+                    offset: const Offset(0, 5),
+                  ),
+                ],
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Row(
+                  Row(
                     children: [
-                      Icon(
-                        Icons.map_outlined,
-                        color: Color(0xff176B45),
-                        size: 23,
-                      ),
-                      SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          "Titik Lokasi pada Peta",
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 15,
-                            color: Color(0xff176B45),
-                          ),
+                      Container(
+                        width: 42,
+                        height: 42,
+                        decoration: BoxDecoration(
+                          color: const Color(0xffEAF5EF),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(
+                          Icons.map_rounded,
+                          color: Color(0xff176B45),
+                          size: 23,
                         ),
                       ),
+                      const SizedBox(width: 11),
+                      const Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "Titik Lokasi pada Peta",
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 15,
+                                color: Color(0xff173D2B),
+                              ),
+                            ),
+                            SizedBox(height: 3),
+                            Text(
+                              "Tandai lokasi kejadian secara tepat",
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: Color(0xff78877F),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (_koordinatTerpilih != null)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 9,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xffE8F6EE),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.check_circle,
+                                color: Color(0xff219653),
+                                size: 13,
+                              ),
+                              SizedBox(width: 4),
+                              Text(
+                                "Dipilih",
+                                style: TextStyle(
+                                  color: Color(0xff176B45),
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                     ],
                   ),
 
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 15),
 
                   Text(
-                    "Tentukan titik lokasi kejadian agar petugas "
-                    "lebih mudah menemukan lokasi pengaduan.",
+                    "Pilih titik yang sesuai dengan lokasi gangguan agar petugas "
+                    "dapat menemukan tempat kejadian dengan lebih mudah.",
                     style: TextStyle(
                       fontSize: 12,
                       color: Colors.grey.shade700,
@@ -425,35 +521,54 @@ class _BuatPengaduanPageState extends State<BuatPengaduanPage> {
                     ),
                   ),
 
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 15),
 
                   if (_koordinatTerpilih == null)
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.symmetric(
-                        vertical: 18,
-                        horizontal: 12,
+                        horizontal: 16,
+                        vertical: 22,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
+                        color: const Color(0xffF6FAF7),
+                        borderRadius: BorderRadius.circular(14),
                         border: Border.all(
-                          color: const Color(0xffD5E6DB),
+                          color: const Color(0xffE1EEE5),
                         ),
                       ),
-                      child: const Column(
+                      child: Column(
                         children: [
-                          Icon(
-                            Icons.location_searching,
-                            color: Color(0xff176B45),
-                            size: 34,
+                          Container(
+                            width: 58,
+                            height: 58,
+                            decoration: const BoxDecoration(
+                              color: Color(0xffE6F3EA),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.add_location_alt_outlined,
+                              color: Color(0xff176B45),
+                              size: 29,
+                            ),
                           ),
-                          SizedBox(height: 8),
-                          Text(
-                            "Belum ada titik lokasi dipilih",
+                          const SizedBox(height: 11),
+                          const Text(
+                            "Belum ada titik lokasi",
                             style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xff294B38),
+                            ),
+                          ),
+                          const SizedBox(height: 5),
+                          Text(
+                            "Tekan tombol di bawah untuk memilih lokasi kejadian pada peta.",
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.grey.shade600,
+                              height: 1.4,
                             ),
                           ),
                         ],
@@ -462,10 +577,13 @@ class _BuatPengaduanPageState extends State<BuatPengaduanPage> {
                   else
                     Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.all(12),
+                      padding: const EdgeInsets.all(13),
                       decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
+                        color: const Color(0xffF6FAF7),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: const Color(0xffDCEBE2),
+                        ),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -475,59 +593,153 @@ class _BuatPengaduanPageState extends State<BuatPengaduanPage> {
                               Icon(
                                 Icons.check_circle,
                                 color: Color(0xff219653),
-                                size: 18,
+                                size: 17,
                               ),
                               SizedBox(width: 6),
                               Text(
-                                "Lokasi berhasil dipilih",
+                                "Koordinat lokasi berhasil dipilih",
                                 style: TextStyle(
                                   color: Color(0xff176B45),
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 12,
                                 ),
                               ),
                             ],
                           ),
                           const SizedBox(height: 12),
-                          Text(
-                            "Latitude: ${_koordinatTerpilih!.latitude.toStringAsFixed(6)}",
-                            style: const TextStyle(fontSize: 12),
-                          ),
-                          const SizedBox(height: 5),
-                          Text(
-                            "Longitude: ${_koordinatTerpilih!.longitude.toStringAsFixed(6)}",
-                            style: const TextStyle(fontSize: 12),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Container(
+                                  padding: const EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        "LATITUDE",
+                                        style: TextStyle(
+                                          fontSize: 9,
+                                          letterSpacing: 0.7,
+                                          color: Colors.grey.shade600,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 5),
+                                      Text(
+                                        _koordinatTerpilih!.latitude.toStringAsFixed(6),
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.bold,
+                                          color: Color(0xff294B38),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 9),
+                              Expanded(
+                                child: Container(
+                                  padding: const EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        "LONGITUDE",
+                                        style: TextStyle(
+                                          fontSize: 9,
+                                          letterSpacing: 0.7,
+                                          color: Colors.grey.shade600,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 5),
+                                      Text(
+                                        _koordinatTerpilih!.longitude.toStringAsFixed(6),
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.bold,
+                                          color: Color(0xff294B38),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
                     ),
 
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 13),
 
                   SizedBox(
                     width: double.infinity,
-                    height: 46,
+                    height: 48,
                     child: ElevatedButton.icon(
                       onPressed: _pilihLokasi,
-                      icon: const Icon(
-                        Icons.pin_drop_outlined,
+                      icon: Icon(
+                        _koordinatTerpilih == null
+                            ? Icons.add_location_alt_outlined
+                            : Icons.edit_location_alt_outlined,
                         size: 19,
                       ),
                       label: Text(
                         _koordinatTerpilih == null
-                            ? "Tentukan Titik pada Peta"
+                            ? "Pilih Titik pada Peta"
                             : "Ubah Titik Lokasi",
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xff176B45),
                         foregroundColor: Colors.white,
                         elevation: 0,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: BorderRadius.circular(11),
                         ),
                       ),
                     ),
                   ),
+
+                  if (_koordinatTerpilih != null) ...[
+                    const SizedBox(height: 9),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 44,
+                      child: OutlinedButton.icon(
+                        onPressed: _bukaGoogleMaps,
+                        icon: const Icon(Icons.open_in_new_rounded, size: 17),
+                        label: const Text(
+                          "Lihat Lokasi di Google Maps",
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: const Color(0xff176B45),
+                          side: const BorderSide(
+                            color: Color(0xffC9E4D3),
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(11),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),

@@ -7,6 +7,11 @@ import '../helper/image_helper.dart';
 import 'landingpage.dart';
 import '../helper/url_helper.dart';
 
+const Color _primaryBlue = Color(0xFF1769AA);
+const Color _darkBlue = Color(0xFF0D47A1);
+const Color _softBlue = Color(0xFFE8F1FB);
+const Color _pageBackground = Color(0xFFF3F7FC);
+
 class AkunPage extends StatefulWidget {
   final String emailTarget;
   const AkunPage({super.key, required this.emailTarget});
@@ -76,7 +81,7 @@ class _AkunPageState extends State<AkunPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: _pageBackground,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -99,7 +104,7 @@ class _AkunPageState extends State<AkunPage> {
         ),
       ),
       body: isLoading
-          ? const Center(child: CircularProgressIndicator(color: Colors.blue))
+          ? const Center(child: CircularProgressIndicator(color: _primaryBlue))
           : SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
               child: Column(
@@ -109,14 +114,14 @@ class _AkunPageState extends State<AkunPage> {
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
-                        colors: [Colors.blue.shade800, Colors.blue.shade500],
+                        colors: [_darkBlue, const Color(0xFF3288CF)],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.blue.withOpacity(0.3),
+                          color: _primaryBlue.withOpacity(0.3),
                           blurRadius: 15,
                           offset: const Offset(0, 8),
                         ),
@@ -145,14 +150,14 @@ class _AkunPageState extends State<AkunPage> {
                                           (context, error, stackTrace) => Icon(
                                             Icons.person,
                                             size: 40,
-                                            color: Colors.blue.shade700,
+                                            color: _primaryBlue,
                                           ),
                                     ),
                                   )
                                 : Icon(
                                     Icons.person,
                                     size: 40,
-                                    color: Colors.blue.shade700,
+                                    color: _primaryBlue,
                                   ),
                           ),
                         ),
@@ -199,7 +204,7 @@ class _AkunPageState extends State<AkunPage> {
                   _menuTile(
                     context,
                     icon: Icons.person_outline,
-                    color: Colors.blue,
+                    color: _primaryBlue,
                     title: "Profile Saya",
                     subtitle: "Lihat detail informasi akun",
                     page: ProfilePage(
@@ -363,7 +368,7 @@ class ProfilePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: _pageBackground,
       appBar: AppBar(
         title: const Text(
           "Profil Saya",
@@ -373,7 +378,7 @@ class ProfilePage extends StatelessWidget {
             fontSize: 18,
           ),
         ),
-        backgroundColor: Colors.blue.shade700,
+        backgroundColor: _primaryBlue,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.white),
       ),
@@ -389,7 +394,7 @@ class ProfilePage extends StatelessWidget {
                   height: 120,
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      colors: [Colors.blue.shade700, Colors.blue.shade50],
+                      colors: [_primaryBlue, _softBlue],
                     ),
                     borderRadius: const BorderRadius.only(
                       bottomLeft: Radius.circular(30),
@@ -426,14 +431,14 @@ class ProfilePage extends StatelessWidget {
                                     const Icon(
                                       Icons.person,
                                       size: 60,
-                                      color: Colors.blue,
+                                      color: _primaryBlue,
                                     ),
                               ),
                             )
                           : const Icon(
                               Icons.person,
                               size: 60,
-                              color: Colors.blue,
+                              color: _primaryBlue,
                             ),
                     ),
                   ),
@@ -454,13 +459,13 @@ class ProfilePage extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
               decoration: BoxDecoration(
-                color: Colors.blue.shade50,
+                color: _softBlue,
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
                 "Warga Desa Maju Bersama",
                 style: TextStyle(
-                  color: Colors.blue.shade700,
+                  color: _primaryBlue,
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
                 ),
@@ -529,10 +534,10 @@ class ProfilePage extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: Colors.blue.shade50,
+            color: _softBlue,
             shape: BoxShape.circle,
           ),
-          child: Icon(icon, color: Colors.blue.shade700, size: 20),
+          child: Icon(icon, color: _primaryBlue, size: 20),
         ),
         const SizedBox(width: 15),
         Expanded(
@@ -600,6 +605,13 @@ class _EditProfilPageState extends State<EditProfilPage> {
     hpController = TextEditingController(
       text: widget.noHp == "Belum diatur" ? "" : widget.noHp,
     );
+  }
+
+  @override
+  void dispose() {
+    namaController.dispose();
+    hpController.dispose();
+    super.dispose();
   }
 
   Future<void> _pilihFoto() async {
@@ -727,7 +739,7 @@ class _EditProfilPageState extends State<EditProfilPage> {
                         : const Icon(
                             Icons.person,
                             size: 50,
-                            color: Colors.blue,
+                            color: _primaryBlue,
                           ),
                   ),
                   Positioned(
@@ -736,7 +748,7 @@ class _EditProfilPageState extends State<EditProfilPage> {
                     child: Container(
                       padding: const EdgeInsets.all(6),
                       decoration: BoxDecoration(
-                        color: Colors.blue.shade700,
+                        color: _primaryBlue,
                         shape: BoxShape.circle,
                         border: Border.all(color: Colors.white, width: 2),
                       ),
@@ -770,7 +782,7 @@ class _EditProfilPageState extends State<EditProfilPage> {
               height: 55,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue.shade700,
+                  backgroundColor: _primaryBlue,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(15),
                   ),
@@ -799,11 +811,12 @@ class _EditProfilPageState extends State<EditProfilPage> {
       padding: const EdgeInsets.only(bottom: 20),
       child: TextField(
         controller: controller,
+        textCapitalization: TextCapitalization.words,
         decoration: InputDecoration(
           labelText: hint,
           prefixIcon: Icon(icon, color: Colors.grey),
           filled: true,
-          fillColor: const Color(0xFFF8F9FA),
+          fillColor: _pageBackground,
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(15),
             borderSide: BorderSide.none,
@@ -849,6 +862,14 @@ class _UbahPasswordPageState extends State<UbahPasswordPage> {
   final TextEditingController confirmPassController = TextEditingController();
   bool isHidden = true;
   bool isLoading = false;
+
+  @override
+  void dispose() {
+    oldPassController.dispose();
+    newPassController.dispose();
+    confirmPassController.dispose();
+    super.dispose();
+  }
 
   Future<void> simpanPassword() async {
     if (newPassController.text != confirmPassController.text) {
@@ -926,7 +947,7 @@ class _UbahPasswordPageState extends State<UbahPasswordPage> {
             const CircleAvatar(
               radius: 45,
               backgroundColor: Color(0xFFFFF4E5),
-              child: Icon(Icons.lock_outline, size: 40, color: Colors.orange),
+              child: Icon(Icons.lock_outline, size: 40, color: _primaryBlue),
             ),
             const SizedBox(height: 30),
             _password("Password Lama", oldPassController),
@@ -938,7 +959,7 @@ class _UbahPasswordPageState extends State<UbahPasswordPage> {
               height: 55,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.orange,
+                  backgroundColor: _primaryBlue,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(15),
                   ),
@@ -979,7 +1000,7 @@ class _UbahPasswordPageState extends State<UbahPasswordPage> {
             onPressed: () => setState(() => isHidden = !isHidden),
           ),
           filled: true,
-          fillColor: const Color(0xFFF8F9FA),
+          fillColor: _pageBackground,
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(15),
             borderSide: BorderSide.none,
@@ -1036,7 +1057,7 @@ class _RiwayatPageState extends State<RiwayatPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: _pageBackground,
       appBar: AppBar(
         title: const Text(
           "Riwayat Pengaduan",
@@ -1051,7 +1072,7 @@ class _RiwayatPageState extends State<RiwayatPage> {
         iconTheme: const IconThemeData(color: Colors.black),
       ),
       body: isLoading
-          ? const Center(child: CircularProgressIndicator(color: Colors.blue))
+          ? const Center(child: CircularProgressIndicator(color: _primaryBlue))
           : riwayat.isEmpty
           ? Center(
               child: Column(
@@ -1078,7 +1099,7 @@ class _RiwayatPageState extends State<RiwayatPage> {
 
                 Color statusColor = Colors.grey;
                 if (item['status'] == 'Menunggu') statusColor = Colors.orange;
-                if (item['status'] == 'Diproses') statusColor = Colors.blue;
+                if (item['status'] == 'Diproses') statusColor = _primaryBlue;
                 if (item['status'] == 'Selesai') statusColor = Colors.green;
 
                 return Container(
@@ -1102,12 +1123,12 @@ class _RiwayatPageState extends State<RiwayatPage> {
                     leading: Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: Colors.blue.shade50,
+                        color: _softBlue,
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Icon(
                         Icons.assignment_outlined,
-                        color: Colors.blue.shade700,
+                        color: _primaryBlue,
                       ),
                     ),
                     title: Text(
