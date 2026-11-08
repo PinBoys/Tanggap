@@ -549,4 +549,37 @@ class PengaduanController extends Controller
             ], 500);
         }
     }
+    public function checkImageStorage()
+{
+    $files = [
+        'pengaduan_images/84e0334f-ee52-4897-bd5c-833313447390.jpg',
+        'pengaduan_images/b5738d50-0289-4df6-8abf-afdade4b489e.jpg',
+        'pengaduan_images/0c93cb3e-c4e4-42b7-b297-70e99f094836.jpg',
+        'profile_images/profile_6af06b86e1a49.jpg',
+    ];
+
+    $results = [];
+
+    foreach ($files as $file) {
+        $publicPath = public_path('storage/' . $file);
+
+        $results[] = [
+            'file' => $file,
+            'disk_exists' => Storage::disk('public')->exists($file),
+            'public_exists' => file_exists($publicPath),
+            'readable' => is_readable($publicPath),
+            'permissions' => file_exists($publicPath)
+                ? substr(sprintf('%o', fileperms($publicPath)), -4)
+                : null,
+            'size' => file_exists($publicPath)
+                ? filesize($publicPath)
+                : null,
+        ];
+    }
+
+    return response()->json([
+        'status' => 'success',
+        'results' => $results
+    ]);
+}
 }
