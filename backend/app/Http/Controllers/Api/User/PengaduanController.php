@@ -281,19 +281,18 @@ class PengaduanController extends Controller
                             'file_type' => 'image/jpeg',
                             'created_at' => now()
                         ]);
+                        Log::info('CEK STORAGE TANGGAP', [
+                            'file_path' => $folderPath,
+                            'disk_exists' => Storage::disk('public')->exists($folderPath),
+                            'disk_path' => Storage::disk('public')->path($folderPath),
+                            'storage_link_exists' => file_exists(public_path('storage')),
+                            'storage_link_is_link' => is_link(public_path('storage')),
+                            'public_file_exists' => file_exists(public_path('storage/' . $folderPath)),
+                            'public_file_readable' => is_readable(public_path('storage/' . $folderPath)),
+                        ]);
                     }
-                    Log::info('CEK STORAGE TANGGAP', [
-    'file_path' => $folderPath,
-    'disk_exists' => Storage::disk('public')->exists($folderPath),
-    'disk_path' => Storage::disk('public')->path($folderPath),
-    'storage_link_exists' => file_exists(public_path('storage')),
-    'storage_link_is_link' => is_link(public_path('storage')),
-    'public_file_exists' => file_exists(public_path('storage/' . $folderPath)),
-    'public_file_readable' => is_readable(public_path('storage/' . $folderPath)),
-]);
                 }
             });
-            
             
 
             return response()->json([
