@@ -1,4 +1,3 @@
-
 FROM php:8.2-apache
 
 # Install dependencies
@@ -48,11 +47,11 @@ RUN sed -ri 's!/var/www/html!/var/www/html/public!g' \
 RUN chown -R www-data:www-data storage bootstrap/cache \
     && chmod -R 775 storage bootstrap/cache
 
-# Configure Render port
-RUN printf '#!/bin/sh\nset -e\nsed -i "s/Listen 80/Listen ${PORT:-10000}/" /etc/apache2/ports.conf\nsed -i "s/:80>/:${PORT:-10000}>/" /etc/apache2/sites-available/000-default.conf\nexec apache2-foreground\n' \
-    > /usr/local/bin/start-render \
-    && chmod +x /usr/local/bin/start-render
+# Configure Apache to use EthioDeploy PORT
+RUN printf '#!/bin/sh\nset -e\nsed -i "s/Listen 80/Listen ${PORT:-3000}/" /etc/apache2/ports.conf\nsed -i "s/:80>/:${PORT:-3000}>/" /etc/apache2/sites-available/000-default.conf\nexec apache2-foreground\n' \
+    > /usr/local/bin/start-apache \
+    && chmod +x /usr/local/bin/start-apache
 
-EXPOSE 10000
+EXPOSE 3000
 
-CMD ["/usr/local/bin/start-render"]
+CMD ["/usr/local/bin/start-apache"]
