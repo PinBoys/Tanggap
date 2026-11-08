@@ -73,3 +73,52 @@ Route::get('/check-image-storage', [
     PengaduanController::class,
     'checkImageStorage'
 ]);
+
+// ================= TEST SUPABASE STORAGE =================
+Route::post('/test-supabase-storage', function (
+    \Illuminate\Http\Request $request
+) {
+    try {
+        $content = 'TANGGAP SUPABASE CONNECTION TEST - ' . now();
+
+        $filename = 'testing/tanggap-test-' .
+            \Illuminate\Support\Str::uuid() . '.txt';
+
+        $disk = \Illuminate\Support\Facades\Storage::disk('supabase');
+
+        $uploaded = $disk->put($filename, $content);
+
+        if (!$uploaded) {
+            throw new \RuntimeException('Upload gagal.');
+        }
+
+        $exists = $disk->exists($filename);
+        $downloaded = $disk->get($filename);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Koneksi Supabase Storage berhasil!',
+            'upload' => $uploaded,
+            'file_exists' => $exists,
+            'content_matches' => $downloaded === $content,
+            'file_path' => $filename,
+            'bucket' => config('filesystems.disks.supabase.bucket'),
+        ]);
+
+    } catch (\Throwable $e) {
+        \Illuminate\Support\Facades\Log::error(
+            'SUPABASE STORAGE TEST FAILED',
+            [
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+            ]
+        );
+
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Koneksi Supabase gagal.',
+            'detail' => $e->getMessage(),
+        ], 500);
+    }
+});
