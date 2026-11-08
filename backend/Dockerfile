@@ -33,13 +33,12 @@ WORKDIR /var/www/html
 COPY . .
 
 # Install production dependencies
-RUN composer install \
+RUN COMPOSER_PROCESS_TIMEOUT=600 composer install \
     --no-dev \
     --optimize-autoloader \
     --no-interaction \
     --prefer-dist \
-    --no-progress \
-    --timeout=600
+    --no-progress
 
 # Configure Apache public directory
 RUN sed -ri 's!/var/www/html!/var/www/html/public!g' \
