@@ -281,7 +281,7 @@ class PengaduanController extends Controller
                             'file_type' => 'image/jpeg',
                             'created_at' => now()
                         ]);
-                        Log::info('CEK STORAGE TANGGAP', [
+                        Log::info('CEK STORAGE TERBARU', [
                             'file_path' => $folderPath,
                             'disk_exists' => Storage::disk('public')->exists($folderPath),
                             'disk_path' => Storage::disk('public')->path($folderPath),
