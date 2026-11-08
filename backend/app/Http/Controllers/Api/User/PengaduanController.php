@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Log;
 use Intervention\Image\ImageManager;
 use Intervention\Image\Drivers\Gd\Driver;
 
+
 class PengaduanController extends Controller
 {
     /**
