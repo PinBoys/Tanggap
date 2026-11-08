@@ -7,14 +7,14 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 use Intervention\Image\ImageManager;
 use Intervention\Image\Drivers\Gd\Driver;
-use Illuminate\Support\Facades\Log;
 
 class PengaduanController extends Controller
 {
     /**
-     * Mengambil daftar kategori pengaduan dari database
+     * Mengambil daftar kategori pengaduan dari database.
      */
     public function categories()
     {
@@ -30,6 +30,12 @@ class PengaduanController extends Controller
             ], 200);
 
         } catch (\Throwable $e) {
+            Log::error('GET CATEGORIES ERROR', [
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
+
             return response()->json([
                 'status' => 'error',
                 'message' => 'Gagal mengambil kategori: ' . $e->getMessage()
@@ -38,12 +44,11 @@ class PengaduanController extends Controller
     }
 
     /**
-     * 4. Menyimpan Pengaduan Baru (Dengan Form Lengkap & Foto)
+     * Menyimpan pengaduan baru beserta foto bukti.
      */
     public function store(Request $request)
     {
         try {
-
             $request->validate([
                 'email' => 'required|email',
                 'category_id' => 'required|uuid|exists:complaint_categories,id',
@@ -58,11 +63,10 @@ class PengaduanController extends Controller
                 'cakupan' => 'required|string',
             ]);
 
-            // Mengambil koordinat dari request Flutter
             $latitude = $request->input('latitude');
             $longitude = $request->input('longitude');
 
-            // Mengambil kategori yang dipilih pengguna
+            // Mengambil kategori pengaduan.
             $kategori = DB::table('complaint_categories')
                 ->where('id', $request->category_id)
                 ->first();
@@ -74,22 +78,39 @@ class PengaduanController extends Controller
                 ], 422);
             }
 
-            $account = DB::table('accounts')->where('email', $request->email)->first();
+            // Mengambil akun pengguna.
+            $account = DB::table('accounts')
+                ->where('email', $request->email)
+                ->first();
 
             if (!$account) {
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'Akun tidak ditemukan'
+                    'message' => 'Akun tidak ditemukan.'
                 ], 404);
             }
 
-            $user = DB::table('users')->where('account_id', $account->id)->first();
+            $user = DB::table('users')
+                ->where('account_id', $account->id)
+                ->first();
 
-            DB::transaction(function () use ($request, $user, $latitude, $longitude, $kategori) {
+            if (!$user) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Data pengguna tidak ditemukan.'
+                ], 404);
+            }
 
+            DB::transaction(function () use (
+                $request,
+                $user,
+                $latitude,
+                $longitude,
+                $kategori
+            ) {
                 $complaintId = (string) Str::uuid();
 
-                // Menentukan titik koordinat lokasi pengaduan
+                // Menentukan titik koordinat lokasi pengaduan.
                 if ($latitude !== null && $longitude !== null) {
                     $lat = (float) $latitude;
                     $lng = (float) $longitude;
@@ -103,7 +124,7 @@ class PengaduanController extends Controller
                     );
                 }
 
-                // Simpan Data Teks Pengaduan
+                // Menyimpan data pengaduan.
                 DB::table('complaints')->insert([
                     'id' => $complaintId,
                     'user_id' => $user->id,
@@ -119,7 +140,10 @@ class PengaduanController extends Controller
                     'updated_at' => now()
                 ]);
 
-                // Hitung Scoring Prioritas
+                // ==================================
+                // PERHITUNGAN PRIORITAS SAW
+                // ==================================
+
                 $mapDampak = [
                     "Aman" => 1,
                     "Gangguan Kecil" => 2,
@@ -152,10 +176,7 @@ class PengaduanController extends Controller
                     "Sangat Luas" => 5
                 ];
 
-                // ======================
-                // BOBOT SAW
-                // ======================
-
+                // Bobot SAW.
                 $bobot = [
                     'dampak' => 0.40,
                     'sensitivitas' => 0.30,
@@ -163,11 +184,7 @@ class PengaduanController extends Controller
                     'cakupan' => 0.15,
                 ];
 
-                // =========================
-                // NORMALISASI SAW
-                // =========================
-
-                // BENEFIT
+                // Normalisasi benefit.
                 $dampak =
                     ($mapDampak[$request->dampak] ?? 1) / 5;
 
@@ -177,123 +194,151 @@ class PengaduanController extends Controller
                 $cakupan =
                     ($mapCakupan[$request->cakupan] ?? 1) / 5;
 
-                // COST
+                // Normalisasi cost.
                 $nilaiAlternatif =
                     $mapAlternatif[$request->alternatif] ?? 1;
 
-                $alternatif =
-                    1 / $nilaiAlternatif;
+                $alternatif = 1 / $nilaiAlternatif;
 
-                // =========================
-                // HITUNG SAW
-                // =========================
-
+                // Menghitung nilai SAW.
                 $nilaiSAW =
                     ($dampak * $bobot['dampak']) +
                     ($sensitivitas * $bobot['sensitivitas']) +
                     ($alternatif * $bobot['alternatif']) +
                     ($cakupan * $bobot['cakupan']);
 
+                // Menentukan tingkat urgensi.
                 if ($nilaiSAW >= 0.81) {
-
                     $urgensi = "Sangat Tinggi";
-
                 } elseif ($nilaiSAW >= 0.61) {
-
                     $urgensi = "Tinggi";
-
                 } elseif ($nilaiSAW >= 0.41) {
-
                     $urgensi = "Sedang";
-
                 } elseif ($nilaiSAW >= 0.21) {
-
                     $urgensi = "Rendah";
-
                 } else {
-
                     $urgensi = "Sangat Rendah";
-
                 }
 
+                // Menyimpan hasil SAW.
                 DB::table('priority_scores')->insert([
                     'complaint_id' => $complaintId,
-
                     'safety_impact' =>
                         $mapDampak[$request->dampak] ?? 1,
-
                     'time_sensitivity' =>
                         $mapSensitivitas[$request->sensitivitas] ?? 1,
-
                     'alternative_availability' =>
                         $mapAlternatif[$request->alternatif] ?? 1,
-
                     'population_coverage' =>
                         $mapCakupan[$request->cakupan] ?? 1,
-
-                    'saw_score' =>
-                        round($nilaiSAW, 4),
-
-                    'urgency_level' =>
-                        $urgensi,
-
-                    'last_calculated_at' =>
-                        now()
+                    'saw_score' => round($nilaiSAW, 4),
+                    'urgency_level' => $urgensi,
+                    'last_calculated_at' => now()
                 ]);
 
-                // Memeriksa berbagai kemungkinan key pengiriman dari Flutter
+                // ==================================
+                // PENYIMPANAN FOTO PENGADUAN
+                // ==================================
+
+                // Memeriksa kemungkinan nama field dari Flutter.
                 $fileInput = $request->file('bukti')
                     ?? $request->file('foto')
                     ?? $request->file('image')
                     ?? $request->file('foto_bukti');
 
                 if ($fileInput) {
-
-                    // Jadikan array agar aman dilooping
-                    $files = is_array($fileInput) ? $fileInput : [$fileInput];
+                    $files = is_array($fileInput)
+                        ? $fileInput
+                        : [$fileInput];
 
                     foreach ($files as $file) {
 
-                        // 1. Inisialisasi Manager
+                        if (!$file->isValid()) {
+                            throw new \RuntimeException(
+                                'File foto tidak valid.'
+                            );
+                        }
+
+                        // Membaca dan mengompres foto.
                         $manager = new ImageManager(new Driver());
-                        $image = $manager->read($file->getRealPath());
 
-                        // 2. Kompresi agar ukuran file kecil dan enteng ditarik Flutter
-                        $image->scaleDown(width: 800);
-
-                        // 3. Tentukan nama file
-                        $filename = Str::uuid() . ".jpg";
-                        $folderPath = "pengaduan_images/" . $filename;
-
-                        // 4. Simpan ke Storage
-                        Storage::disk('public')->put(
-                            $folderPath,
-                            (string) $image->toJpeg(75)
+                        $image = $manager->read(
+                            $file->getRealPath()
                         );
 
-                        // 5. Simpan path ke Database
-                        $urlPath = "/storage/" . $folderPath;
+                        $image->scaleDown(width: 800);
+
+                        // Membuat nama file unik.
+                        $filename = Str::uuid() . '.jpg';
+
+                        $folderPath =
+                            'pengaduan_images/' . $filename;
+
+                        // Mengubah gambar menjadi JPEG.
+                        $imageContent = (string) $image->toJpeg(75);
+
+                        // Menyimpan foto ke public storage.
+                        $saved = Storage::disk('public')->put(
+                            $folderPath,
+                            $imageContent
+                        );
+
+                        if (!$saved) {
+                            throw new \RuntimeException(
+                                'Gagal menyimpan foto pengaduan ke storage.'
+                            );
+                        }
+
+                        // ==================================
+                        // DIAGNOSTIK STORAGE
+                        // ==================================
+
+                        $diskExists = Storage::disk('public')
+                            ->exists($folderPath);
+
+                        $diskPath = Storage::disk('public')
+                            ->path($folderPath);
+
+                        $publicPath = public_path(
+                            'storage/' . $folderPath
+                        );
+
+                        Log::info('CEK PENGADUAN STORAGE', [
+                            'complaint_id' => $complaintId,
+                            'file_path' => $folderPath,
+                            'save_result' => $saved,
+                            'disk_exists' => $diskExists,
+                            'disk_path' => $diskPath,
+                            'storage_link_exists' =>
+                                file_exists(public_path('storage')),
+                            'storage_link_is_link' =>
+                                is_link(public_path('storage')),
+                            'public_file_exists' =>
+                                file_exists($publicPath),
+                            'file_readable' =>
+                                is_readable($publicPath),
+                            'file_size' =>
+                                file_exists($publicPath)
+                                    ? filesize($publicPath)
+                                    : null,
+                        ]);
+
+                        // ==================================
+                        // SIMPAN PATH KE DATABASE
+                        // ==================================
+
+                        $urlPath = '/storage/' . $folderPath;
 
                         DB::table('attachments')->insert([
-                            'id' => Str::uuid(),
+                            'id' => (string) Str::uuid(),
                             'complaint_id' => $complaintId,
                             'file_url' => $urlPath,
                             'file_type' => 'image/jpeg',
                             'created_at' => now()
                         ]);
-                        Log::info('CEK STORAGE TERBARU', [
-                            'file_path' => $folderPath,
-                            'disk_exists' => Storage::disk('public')->exists($folderPath),
-                            'disk_path' => Storage::disk('public')->path($folderPath),
-                            'storage_link_exists' => file_exists(public_path('storage')),
-                            'storage_link_is_link' => is_link(public_path('storage')),
-                            'public_file_exists' => file_exists(public_path('storage/' . $folderPath)),
-                            'public_file_readable' => is_readable(public_path('storage/' . $folderPath)),
-                        ]);
                     }
                 }
             });
-            
 
             return response()->json([
                 'status' => 'success',
@@ -301,6 +346,13 @@ class PengaduanController extends Controller
             ], 201);
 
         } catch (\Throwable $e) {
+
+            Log::error('STORE PENGADUAN ERROR', [
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString()
+            ]);
 
             return response()->json([
                 'status' => 'error',
@@ -310,7 +362,7 @@ class PengaduanController extends Controller
     }
 
     /**
-     * 5. FUNGSI DETAIL PENGADUAN
+     * Mengambil detail pengaduan.
      */
     public function detail($id)
     {
@@ -339,7 +391,7 @@ class PengaduanController extends Controller
             ->where('complaint_id', $pengaduan->id)
             ->pluck('file_url');
 
-        // RIWAYAT TINDAK LANJUT ADMIN
+        // Mengambil riwayat tindak lanjut admin.
         $tindakLanjutRaw = DB::table('complaint_actions')
             ->where('complaint_id', $pengaduan->id)
             ->orderBy('created_at', 'desc')
@@ -348,7 +400,6 @@ class PengaduanController extends Controller
         $tindakLanjut = [];
 
         foreach ($tindakLanjutRaw as $action) {
-
             $actionPhotos = DB::table('action_attachments')
                 ->where('action_id', $action->id)
                 ->pluck('file_url');
@@ -357,19 +408,25 @@ class PengaduanController extends Controller
                 'id' => $action->id,
                 'status' => $action->status_changed_to,
                 'catatan' => $action->notes,
-                'tanggal' => date('d M Y, H:i', strtotime($action->created_at)),
+                'tanggal' => date(
+                    'd M Y, H:i',
+                    strtotime($action->created_at)
+                ),
                 'foto_bukti' => $actionPhotos
             ];
         }
 
-        // AMBIL DATA REVIEW/RATING WARGA
+        // Mengambil data review/rating warga.
         $review = DB::table('complaint_reviews')
             ->where('complaint_id', $pengaduan->id)
             ->select('rating', 'comment', 'created_at')
             ->first();
 
         if ($review) {
-            $review->created_at = date('d M Y, H:i', strtotime($review->created_at));
+            $review->created_at = date(
+                'd M Y, H:i',
+                strtotime($review->created_at)
+            );
         }
 
         $mapDampak = [
@@ -415,10 +472,14 @@ class PengaduanController extends Controller
                 'status' => $pengaduan->status,
                 'urgensi' => $kategoriUrgensi,
                 'saw_score' => $nilaiSAW,
-                'dampak' => $mapDampak[$priority->safety_impact] ?? '-',
-                'sensitivitas' => $mapSensitivitas[$priority->time_sensitivity] ?? '-',
-                'alternatif' => $mapAlternatif[$priority->alternative_availability] ?? '-',
-                'cakupan' => $mapCakupan[$priority->population_coverage] ?? '-',
+                'dampak' =>
+                    $mapDampak[$priority->safety_impact ?? 0] ?? '-',
+                'sensitivitas' =>
+                    $mapSensitivitas[$priority->time_sensitivity ?? 0] ?? '-',
+                'alternatif' =>
+                    $mapAlternatif[$priority->alternative_availability ?? 0] ?? '-',
+                'cakupan' =>
+                    $mapCakupan[$priority->population_coverage ?? 0] ?? '-',
                 'attachments' => $attachments,
                 'riwayat_tindak_lanjut' => $tindakLanjut,
                 'review' => $review
@@ -427,7 +488,7 @@ class PengaduanController extends Controller
     }
 
     /**
-     * 6. FUNGSI MENYIMPAN RATING & KOMENTAR DARI USER (FITUR BARU)
+     * Menyimpan rating dan komentar dari pengguna.
      */
     public function storeReview(Request $request, $id)
     {
@@ -437,13 +498,15 @@ class PengaduanController extends Controller
         ]);
 
         try {
-
-            $complaint = DB::table('complaints')->where('id', $id)->first();
+            $complaint = DB::table('complaints')
+                ->where('id', $id)
+                ->first();
 
             if (!$complaint || $complaint->status !== 'SELESAI') {
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'Pengaduan belum diselesaikan atau tidak ditemukan'
+                    'message' =>
+                        'Pengaduan belum diselesaikan atau tidak ditemukan'
                 ], 400);
             }
 
@@ -458,7 +521,6 @@ class PengaduanController extends Controller
                 ], 400);
             }
 
-            // Simpan ke database
             DB::table('complaint_reviews')->insert([
                 'id' => (string) Str::uuid(),
                 'complaint_id' => $id,
@@ -475,12 +537,16 @@ class PengaduanController extends Controller
 
         } catch (\Throwable $e) {
 
+            Log::error('STORE REVIEW ERROR', [
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
+
             return response()->json([
                 'status' => 'error',
                 'message' => 'Gagal memberikan rating: ' . $e->getMessage()
             ], 500);
         }
-
     }
 }
-
