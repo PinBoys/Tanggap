@@ -36,7 +36,10 @@ COPY . .
 RUN composer install \
     --no-dev \
     --optimize-autoloader \
-    --no-interaction
+    --no-interaction \
+    --prefer-dist \
+    --no-progress \
+    --timeout=600
 
 # Configure Apache public directory
 RUN sed -ri 's!/var/www/html!/var/www/html/public!g' \
@@ -47,7 +50,7 @@ RUN sed -ri 's!/var/www/html!/var/www/html/public!g' \
 RUN chown -R www-data:www-data storage bootstrap/cache \
     && chmod -R 775 storage bootstrap/cache \
     && php artisan storage:link \
-    && chown -h www-data:www-data public/storage
+    && chown -h www-data:www-data public/storageRUN composer install RUN composer install 
 
 # Configure Apache to use EthioDeploy PORT
 RUN printf '#!/bin/sh\nset -e\nsed -i "s/Listen 80/Listen ${PORT:-3000}/" /etc/apache2/ports.conf\nsed -i "s/:80>/:${PORT:-3000}>/" /etc/apache2/sites-available/000-default.conf\nexec apache2-foreground\n' \
