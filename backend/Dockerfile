@@ -47,12 +47,12 @@ RUN sed -ri 's!/var/www/html!/var/www/html/public!g' \
     /etc/apache2/sites-available/000-default.conf \
     /etc/apache2/apache2.conf
 
+
 # Configure Laravel storage permissions and symbolic link
 RUN chown -R www-data:www-data storage bootstrap/cache \
     && chmod -R 775 storage bootstrap/cache \
     && php artisan storage:link \
-    && chown -h www-data:www-data public/storageRUN COMPOSER_PROCESS_TIMEOUT=600 composer install \
-
+    && chown -h www-data:www-data public/storage
 
 # Configure Apache to use EthioDeploy PORT
 RUN printf '#!/bin/sh\nset -e\nsed -i "s/Listen 80/Listen ${PORT:-3000}/" /etc/apache2/ports.conf\nsed -i "s/:80>/:${PORT:-3000}>/" /etc/apache2/sites-available/000-default.conf\nexec apache2-foreground\n' \
