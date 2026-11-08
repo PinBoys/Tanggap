@@ -33,7 +33,9 @@ WORKDIR /var/www/html
 COPY . .
 
 # Install production dependencies
-RUN COMPOSER_PROCESS_TIMEOUT=600 composer install \
+RUN COMPOSER_PROCESS_TIMEOUT=600 \
+    COMPOSER_MAX_PARALLEL_HTTP=1 \
+    composer install \
     --no-dev \
     --optimize-autoloader \
     --no-interaction \
@@ -49,7 +51,8 @@ RUN sed -ri 's!/var/www/html!/var/www/html/public!g' \
 RUN chown -R www-data:www-data storage bootstrap/cache \
     && chmod -R 775 storage bootstrap/cache \
     && php artisan storage:link \
-    && chown -h www-data:www-data public/storage
+    && chown -h www-data:www-data public/storageRUN COMPOSER_PROCESS_TIMEOUT=600 composer install \
+
 
 # Configure Apache to use EthioDeploy PORT
 RUN printf '#!/bin/sh\nset -e\nsed -i "s/Listen 80/Listen ${PORT:-3000}/" /etc/apache2/ports.conf\nsed -i "s/:80>/:${PORT:-3000}>/" /etc/apache2/sites-available/000-default.conf\nexec apache2-foreground\n' \
