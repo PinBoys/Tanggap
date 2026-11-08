@@ -338,13 +338,6 @@ class _DrawerAdminState extends State<DrawerAdmin> {
             ),
 
             _buildMenuItem(
-              index: 2,
-              icon: Icons.analytics_rounded,
-              title: "Laporan",
-              page: const LaporanAdminPage(),
-            ),
-
-            _buildMenuItem(
               index: 3,
               icon: Icons.auto_awesome_rounded,
               title: "Analisis AI",

@@ -25,7 +25,6 @@ class _DetailPengaduanPageState extends State<DetailPengaduanPage> {
   final TextEditingController _userCommentCtrl = TextEditingController();
   bool _isSendingReview = false;
 
-  String _detailImageVersion = "1";
 
   // Warna tema biru aplikasi TANGGAP
   static const Color primaryBlue = Color(0xFF1769AA);
@@ -67,8 +66,6 @@ class _DetailPengaduanPageState extends State<DetailPengaduanPage> {
 
         setState(() {
           dataPengaduan = data;
-          _detailImageVersion =
-              DateTime.now().millisecondsSinceEpoch.toString();
           isLoading = false;
         });
       } else {
@@ -216,28 +213,26 @@ class _DetailPengaduanPageState extends State<DetailPengaduanPage> {
   // =========================================================
   // MEMBENTUK URL FOTO
   // =========================================================
-  String _buildImageUrl(String url) {
-    if (url == "null" || url.isEmpty) {
+  // URL Supabase bertanda tangan (signed URL) harus dipakai persis
+  // seperti yang dikirim backend. Jangan menambahkan ?v= atau parameter
+  // lain karena dapat membuat tanda tangannya tidak valid.
+  String _buildImageUrl(String? rawUrl) {
+    if (rawUrl == null) return "";
+
+    final url = rawUrl.trim();
+
+    if (url.isEmpty || url == "null") {
       return "";
     }
 
-    if (url.startsWith("http")) {
-      final updatedUrl = url.replaceAll(
-        "127.0.0.1",
-        "10.0.2.2",
-      );
-
-      final separator = updatedUrl.contains("?") ? "&" : "?";
-
-      return "$updatedUrl${separator}v=$_detailImageVersion";
+    // Pertahankan URL lengkap, terutama signed URL Supabase.
+    if (url.startsWith("https://") || url.startsWith("http://")) {
+      return url;
     }
 
-    String cleanPath =
-        url.startsWith('/') ? url.substring(1) : url;
-
-    return UrlHelper.api(
-      '/$cleanPath?v=$_detailImageVersion',
-    );
+    // Untuk path relatif, bentuk URL menggunakan base URL backend.
+    final cleanPath = url.replaceFirst(RegExp(r"^/+"), "");
+    return UrlHelper.api(cleanPath);
   }
 
   // =========================================================
@@ -297,6 +292,11 @@ class _DetailPengaduanPageState extends State<DetailPengaduanPage> {
   }) {
     final finalUrl = _buildImageUrl(imageUrl);
 
+    debugPrint("========== DEBUG FOTO DETAIL ==========");
+    debugPrint("PATH FOTO: $imageUrl");
+    debugPrint("URL FOTO: $finalUrl");
+    debugPrint("========================================");
+
     if (finalUrl.isEmpty) {
       return Container(
         width: width,
@@ -316,7 +316,12 @@ class _DetailPengaduanPageState extends State<DetailPengaduanPage> {
     return ClipRRect(
       borderRadius: BorderRadius.circular(radius),
       child: CachedNetworkImage(
-        imageUrl: UrlHelper.getFullUrl(finalUrl),
+        // Jangan proses ulang URL yang sudah lengkap dari Supabase.
+        imageUrl: finalUrl,
+        memCacheWidth: 900,
+        memCacheHeight: 900,
+        maxWidthDiskCache: 1200,
+        maxHeightDiskCache: 1200,
         width: width,
         height: height,
         fit: BoxFit.cover,
@@ -334,6 +339,8 @@ class _DetailPengaduanPageState extends State<DetailPengaduanPage> {
           );
         },
         errorWidget: (context, url, error) {
+          debugPrint("GAGAL MEMUAT FOTO DETAIL: $error");
+          debugPrint("URL YANG GAGAL: $url");
           return Container(
             width: width,
             height: height,
@@ -851,10 +858,10 @@ class _DetailPengaduanPageState extends State<DetailPengaduanPage> {
         dataPengaduan?['deskripsi']?.toString() ??
         "Tidak ada deskripsi";
 
-    final List fotoList =
-        dataPengaduan?['foto'] ??
-        dataPengaduan?['attachments'] ??
-        [];
+    final dynamic rawFotoList =
+        dataPengaduan?['foto'] ?? dataPengaduan?['attachments'];
+
+    final List fotoList = rawFotoList is List ? rawFotoList : [];
 
     final List riwayatList =
         dataPengaduan?['riwayat_tindak_lanjut'] ?? [];

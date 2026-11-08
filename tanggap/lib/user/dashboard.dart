@@ -51,25 +51,39 @@ class _DashboardPageState extends State<DashboardPage> {
       final res = await http.get(
         Uri.parse(UrlHelper.api('api/profile/${widget.emailUser}')),
       );
+      debugPrint("========== CEK API PROFILE ==========");
+      debugPrint("STATUS: ${res.statusCode}");
+      debugPrint("BODY: ${res.body}");
+      debugPrint("====================================");
+
+      debugPrint("PROFILE STATUS: ${res.statusCode}");
 
       if (res.statusCode == 200) {
         final dataProfil = jsonDecode(res.body)['data'];
+
         if (mounted) {
           setState(() {
-            String? rawFoto = dataProfil['foto_profil'];
+            final dynamic rawFoto = dataProfil['foto_profil'];
+
             debugPrint("FOTO PROFILE RAW: $rawFoto");
-            debugPrint("FOTO PROFILE URL: ${UrlHelper.getFullUrl(rawFoto)}");
-            if (rawFoto != null && rawFoto.isNotEmpty && rawFoto != "null") {
-              fotoSekarang =
-                  "$rawFoto?v=${DateTime.now().millisecondsSinceEpoch}";
-            } else {
-              fotoSekarang = null;
-            }
+
+            fotoSekarang =
+                (rawFoto != null &&
+                    rawFoto.toString().isNotEmpty &&
+                    rawFoto.toString() != "null")
+                ? rawFoto.toString()
+                : null;
+
+            debugPrint(
+              "FOTO PROFILE FINAL: ${UrlHelper.getFullUrl(fotoSekarang)}",
+            );
           });
         }
+      } else {
+        debugPrint("GAGAL MENGAMBIL PROFILE: ${res.body}");
       }
     } catch (e) {
-      debugPrint("Gagal sync foto dashboard: $e");
+      debugPrint("GAGAL SYNC FOTO DASHBOARD: $e");
     }
   }
 
@@ -100,7 +114,10 @@ class _DashboardPageState extends State<DashboardPage> {
       if (mounted) setState(() => isLoading = true);
 
       final response = await http.get(Uri.parse(apiUrl));
-
+      debugPrint("========== CEK API RIWAYAT ==========");
+      debugPrint("STATUS: ${response.statusCode}");
+      debugPrint("BODY: ${response.body}");
+      debugPrint("====================================");
       debugPrint("================ RESPONSE =================");
       debugPrint(response.body);
       debugPrint("===========================================");
@@ -113,20 +130,23 @@ class _DashboardPageState extends State<DashboardPage> {
         if (mounted) {
           setState(() {
             pengaduanTerbaru = dataTerbaru.map((item) {
-              String? rawFoto = item['bukti_pengaduan'];
+              final dynamic rawFoto = item['bukti_pengaduan'];
+
               debugPrint("FOTO PENGADUAN RAW: $rawFoto");
-              debugPrint("FOTO PENGADUAN URL: ${UrlHelper.getFullUrl(rawFoto)}");
+
               String? finalFoto;
-              if (rawFoto != null && rawFoto.isNotEmpty && rawFoto != "null") {
-                finalFoto =
-                    "$rawFoto?v=${DateTime.now().millisecondsSinceEpoch}";
+
+              if (rawFoto != null &&
+                  rawFoto.toString().isNotEmpty &&
+                  rawFoto.toString() != "null") {
+                finalFoto = rawFoto.toString();
               }
 
               return {
                 "judul": item['judul'] ?? "Tanpa Judul",
                 "tanggal": item['tanggal_pengaduan'] ?? "-",
                 "status": item['status'] ?? "Menunggu",
-                "foto": finalFoto ?? rawFoto,
+                "foto": finalFoto,
               };
             }).toList();
 
@@ -335,8 +355,8 @@ class _DashboardPageState extends State<DashboardPage> {
                   ? ClipOval(
                       child: CachedNetworkImage(
                         imageUrl: UrlHelper.getFullUrl(fotoSekarang ?? ""),
-                        memCacheWidth: 300,
-                        memCacheHeight: 200,
+                        memCacheWidth: 600,
+                        memCacheHeight: 600,
                         httpHeaders: const {"Connection": "keep-alive"},
                         width: 42,
                         height: 42,
@@ -638,8 +658,8 @@ class _DashboardPageState extends State<DashboardPage> {
                     fotoUrl != "null")
                 ? CachedNetworkImage(
                     imageUrl: UrlHelper.getFullUrl(fotoUrl),
-                    memCacheWidth: 300,
-                    memCacheHeight: 200,
+                    memCacheWidth: 600,
+                    memCacheHeight: 600,
                     httpHeaders: const {"Connection": "keep-alive"},
                     width: 58,
                     height: 58,

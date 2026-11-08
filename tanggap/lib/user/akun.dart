@@ -40,7 +40,9 @@ class _AkunPageState extends State<AkunPage> {
     try {
       final response = await http.get(Uri.parse(apiUrl));
 
-      print("========== PROFILE ==========");
+      debugPrint("========== PROFILE API ==========");      
+      debugPrint("URL API: $apiUrl");  
+      debugPrint("STATUS: ${response.statusCode}");
       print(response.body);
       print("=============================");
 
@@ -54,14 +56,25 @@ class _AkunPageState extends State<AkunPage> {
           emailUser = data['email'] ?? widget.emailTarget;
           noHp = data['phone'] ?? "Belum diatur";
           alamat = data['alamat'] ?? "Belum diatur";
-          
-          // PERBAIKAN: Cache-buster disematkan di sini, BUKAN di fungsi build()
-          String? rawFoto = data['foto_profil'];
-          if (rawFoto != null && rawFoto.isNotEmpty) {
-            fotoProfil = "$rawFoto?v=${DateTime.now().millisecondsSinceEpoch}";
+          // Supabase Signed URL sudah memiliki parameter tanda tangan.
+          // Jangan menambahkan ?v= atau parameter lain ke URL tersebut.
+          final dynamic rawFotoValue = data['foto_profil'];
+          final String? rawFoto = rawFotoValue?.toString();
+
+          debugPrint("========== DEBUG FOTO PROFIL ==========");
+          debugPrint("RAW FOTO DARI API: $rawFoto");
+
+          if (rawFoto != null && rawFoto.trim().isNotEmpty) {
+            fotoProfil = rawFoto.trim();
+            debugPrint(
+              "URL FOTO FINAL: ${UrlHelper.getFullUrl(fotoProfil!)}",
+            );
           } else {
             fotoProfil = null;
+            debugPrint("FOTO PROFIL KOSONG ATAU NULL");
           }
+          debugPrint("========================================");
+
           
           isLoading = false;
         });
@@ -146,12 +159,17 @@ class _AkunPageState extends State<AkunPage> {
                                       width: 60,
                                       height: 60,
                                       fit: BoxFit.cover,
-                                      errorBuilder:
-                                          (context, error, stackTrace) => Icon(
-                                            Icons.person,
-                                            size: 40,
-                                            color: _primaryBlue,
-                                          ),
+                                      errorBuilder: (context, error, stackTrace) {
+                                        debugPrint("========== ERROR FOTO PROFIL AKUN ==========");                                  
+                                        debugPrint("URL: ${UrlHelper.getFullUrl(fotoProfil ?? "")}");                                     
+                                        debugPrint("ERROR: $error");          
+                                        debugPrint("=============================================");
+                                        return const Icon(
+                                          Icons.person,
+                                          size: 40,
+                                          color: _primaryBlue,
+                                        );
+                                      },
                                     ),
                                   )
                                 : Icon(
@@ -427,12 +445,17 @@ class ProfilePage extends StatelessWidget {
                                 width: 100,
                                 height: 100,
                                 fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) =>
-                                    const Icon(
-                                      Icons.person,
-                                      size: 60,
-                                      color: _primaryBlue,
-                                    ),
+                                errorBuilder: (context, error, stackTrace) {
+                                  debugPrint("========== ERROR FOTO PROFIL DETAIL ==========");                                  
+                                  debugPrint("URL: ${UrlHelper.getFullUrl(fotoProfil ?? "")}");                                  
+                                  debugPrint("ERROR: $error");                                
+                                  debugPrint("===============================================");
+                                  return const Icon(
+                                    Icons.person,
+                                    size: 60,
+                                    color: _primaryBlue,
+                                  );
+                                },
                               ),
                             )
                           : const Icon(
@@ -734,6 +757,16 @@ class _EditProfilPageState extends State<EditProfilPage> {
                               width: 100,
                               height: 100,
                               fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                debugPrint("========== ERROR FOTO PROFIL EDIT ==========");                               
+                                debugPrint("ERROR: $error");                               
+                                debugPrint("==============================================");
+                                return const Icon(
+                                  Icons.person,
+                                  size: 50,
+                                  color: _primaryBlue,
+                                );
+                              },
                             ),
                           )
                         : const Icon(
@@ -1035,6 +1068,11 @@ class _RiwayatPageState extends State<RiwayatPage> {
       final response = await http.get(
         Uri.parse(UrlHelper.api('/api/pengaduan/riwayat/${widget.email}')),
       );
+      debugPrint("========== API RIWAYAT ==========");
+      debugPrint("STATUS: ${response.statusCode}");
+      debugPrint("BODY: ${response.body}");
+      debugPrint("=================================");
+
       if (response.statusCode == 200) {
         final data = json.decode(response.body)['data'];
 
@@ -1052,6 +1090,46 @@ class _RiwayatPageState extends State<RiwayatPage> {
       if (!mounted) return;
       setState(() => isLoading = false);
     }
+  }
+
+  Widget _buildFotoPengaduan(String? rawPath) {
+    if (rawPath == null || rawPath.trim().isEmpty) {
+      return Container(
+        width: 64,
+        height: 64,
+        color: _softBlue,
+        alignment: Alignment.center,
+        child: const Icon(
+          Icons.image_not_supported_outlined,
+          color: _primaryBlue,
+          size: 28,
+        ),
+      );
+    }
+
+    final imageUrl = UrlHelper.getFullUrl(rawPath.trim());
+
+    return Image.network(
+      imageUrl,
+      width: 64,
+      height: 64,
+      fit: BoxFit.cover,
+      errorBuilder: (context, error, stackTrace) {
+        debugPrint("GAGAL MEMUAT FOTO RIWAYAT: $imageUrl");
+        debugPrint("ERROR FOTO RIWAYAT: $error");
+        return Container(
+          width: 64,
+          height: 64,
+          color: _softBlue,
+          alignment: Alignment.center,
+          child: const Icon(
+            Icons.broken_image_outlined,
+            color: _primaryBlue,
+            size: 28,
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -1120,15 +1198,10 @@ class _RiwayatPageState extends State<RiwayatPage> {
                       horizontal: 15,
                       vertical: 8,
                     ),
-                    leading: Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: _softBlue,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Icon(
-                        Icons.assignment_outlined,
-                        color: _primaryBlue,
+                    leading: ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: _buildFotoPengaduan(
+                        item['bukti_pengaduan']?.toString(),
                       ),
                     ),
                     title: Text(

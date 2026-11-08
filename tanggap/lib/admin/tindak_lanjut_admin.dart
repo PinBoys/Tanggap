@@ -178,6 +178,12 @@ class _TindakLanjutAdminPageState extends State<TindakLanjutAdminPage> {
       var streamedResponse = await request
           .send()
           .timeout(const Duration(seconds: 60));
+          debugPrint("JUMLAH FOTO DIPILIH: ${_imageFiles.length}");
+debugPrint("JUMLAH FILE DI REQUEST: ${request.files.length}");
+
+for (var file in request.files) {
+  debugPrint("NAMA FILE: ${file.filename}");
+}
 
       var response = await http.Response.fromStream(streamedResponse);
 
