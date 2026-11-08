@@ -20,6 +20,7 @@ use App\Http\Controllers\Api\Admin\ComplaintActionController;
 use App\Http\Controllers\Api\Admin\AnalisisAIController;
 
 
+
 // ================= AUTH USER =================
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
@@ -65,3 +66,10 @@ Route::get(
 // ================= ANALISIS AI ADMIN =================
 Route::get('/admin/analisis-ai', [AnalisisAIController::class, 'index']);
 Route::post('/admin/analisis-ai/generate', [AnalisisAIController::class, 'generate']);
+
+
+// ================= DIAGNOSTIK STORAGE =================
+Route::get('/check-image-storage', [
+    PengaduanController::class,
+    'checkImageStorage'
+]);
